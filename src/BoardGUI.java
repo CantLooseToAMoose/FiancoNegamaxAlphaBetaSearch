@@ -3,7 +3,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-public class BoardGameAppSwing extends JFrame {
+public class BoardGUI extends JFrame {
     private static final int BOARD_SIZE = 9;  // 9x9 board
     private static final int TILE_SIZE = 80;  // Size of each tile
 
@@ -14,7 +14,7 @@ public class BoardGameAppSwing extends JFrame {
     // Variables to track selected piece
     private Tile selectedTile = null;
 
-    public BoardGameAppSwing() {
+    public BoardGUI() {
         setTitle("9x9 Board Game");
         setSize(BOARD_SIZE * TILE_SIZE, BOARD_SIZE * TILE_SIZE);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -186,7 +186,7 @@ public class BoardGameAppSwing extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            BoardGameAppSwing app = new BoardGameAppSwing();
+            BoardGUI app = new BoardGUI();
             app.setVisible(true);
         });
     }
