@@ -7,34 +7,26 @@ public class BoardGUI extends JFrame {
     private static final int BOARD_SIZE = 9;  // 9x9 board
     private static final int TILE_SIZE = 80;  // Size of each tile
 
-    // 9x9 board state: 0 = empty, 1 = white piece, 2 = black piece
-    private int[][] boardState = new int[BOARD_SIZE][BOARD_SIZE];
     private JPanel boardPanel;
 
     // Variables to track selected piece
     private Tile selectedTile = null;
 
-    public BoardGUI() {
+    private BoardController controller;
+
+    public BoardGUI(BoardController controller, int[][] boardState) {
+        this.controller = controller;
         setTitle("9x9 Board Game");
         setSize(BOARD_SIZE * TILE_SIZE, BOARD_SIZE * TILE_SIZE);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        // Initialize the board state (example: alternating pieces)
-        initializeBoardState();
-
         // Initialize and add the board panel
-        boardPanel = createBoardPanel();
+        boardPanel = createBoardPanel(boardState);
         add(boardPanel);
 
-        // Example of changing the board state and redrawing the board
-        // This is just for demonstration purposes
-        // In a real application, you would call redrawBoard() when the board state changes
-        SwingUtilities.invokeLater(() -> {
-            redrawBoard();
-        });
     }
 
-    private JPanel createBoardPanel() {
+    private JPanel createBoardPanel(int[][] boardState) {
         JPanel panel = new JPanel(new GridLayout(BOARD_SIZE, BOARD_SIZE));
         for (int row = 0; row < BOARD_SIZE; row++) {
             for (int col = 0; col < BOARD_SIZE; col++) {
@@ -49,27 +41,15 @@ public class BoardGUI extends JFrame {
         return panel;
     }
 
-    private void redrawBoard() {
+    private void redrawBoard(int[][] boardState) {
         // Remove the old board panel and add the new one
         getContentPane().remove(boardPanel);
-        boardPanel = createBoardPanel();
+        boardPanel = createBoardPanel(boardState);
         add(boardPanel);
         revalidate();
         repaint();
     }
 
-    private void initializeBoardState() {
-        boardState = new int[][]{
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {0, 1, 0, 0, 0, 0, 0, 1, 0},
-                {0, 0, 1, 0, 0, 0, 1, 0, 0},
-                {0, 0, 0, 1, 0, 1, 0, 0, 0},
-                {0, 0, 0, 0, 0, 0, 0, 0, 0},
-                {0, 0, 0, 2, 0, 2, 0, 0, 0},
-                {0, 0, 2, 0, 0, 0, 2, 0, 0},
-                {0, 2, 0, 0, 0, 0, 0, 2, 0},
-                {2, 2, 2, 2, 2, 2, 2, 2, 2}};
-    }
 
     private static class RoundPiece extends JPanel {
         private int playerColor;  // 0 = empty, 1 = white, 2 = black
@@ -176,18 +156,14 @@ public class BoardGUI extends JFrame {
         }
     }
 
-    public void MoveAPiece(Tile from, Tile to) {
-        RoundPiece movingPiece = from.piece;
-        from.RemovePiece();
-        to.AddPiece(movingPiece);
-        boardState[to.row][to.col] = movingPiece.getPlayerColor(); // Update board state
-        boardState[from.row][from.col] = 0; // Clear previous position
+    public void MoveAPiece(Tile fromTile, Tile toTile) {
+        RoundPiece movingPiece = fromTile.piece;
+        fromTile.RemovePiece();
+        toTile.AddPiece(movingPiece);
+        controller.Move(new Fianco.MoveCommand(fromTile.row, fromTile.col, toTile.row, toTile.col));
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            BoardGUI app = new BoardGUI();
-            app.setVisible(true);
-        });
+
     }
 }
