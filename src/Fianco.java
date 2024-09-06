@@ -61,11 +61,14 @@ public class Fianco {
         private int to_row;
         private int to_col;
 
-        public MoveCommand(int from_row, int from_col, int to_row, int to_col) {
+        private int player;
+
+        public MoveCommand(int from_row, int from_col, int to_row, int to_col,int player) {
             this.from_row = from_row;
             this.from_col = from_col;
             this.to_row = to_row;
             this.to_col = to_col;
+            this.player=player;
         }
 
         public void DoMove(Fianco fianco) {
