@@ -162,8 +162,4 @@ public class BoardGUI extends JFrame {
         toTile.AddPiece(movingPiece);
         controller.Move(new Fianco.MoveCommand(fromTile.row, fromTile.col, toTile.row, toTile.col));
     }
-
-    public static void main(String[] args) {
-
-    }
 }
