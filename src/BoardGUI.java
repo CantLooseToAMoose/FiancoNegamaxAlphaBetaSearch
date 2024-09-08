@@ -12,9 +12,10 @@ public class BoardGUI extends JFrame {
     // Variables to track selected piece
     private Tile selectedTile = null;
 
-    private BoardController controller;
+    private GameController controller;
 
-    public BoardGUI(BoardController controller, int[][] boardState) {
+
+    public BoardGUI(GameController controller, int[][] boardState) {
         this.controller = controller;
         setTitle("9x9 Board Game");
         setSize(BOARD_SIZE * TILE_SIZE, BOARD_SIZE * TILE_SIZE);
@@ -160,6 +161,6 @@ public class BoardGUI extends JFrame {
         RoundPiece movingPiece = fromTile.piece;
         fromTile.RemovePiece();
         toTile.AddPiece(movingPiece);
-        controller.Move(new Fianco.MoveCommand(fromTile.row, fromTile.col, toTile.row, toTile.col));
+        controller.move(fromTile.row, fromTile.col, toTile.row, toTile.col);
     }
 }
