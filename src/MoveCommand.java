@@ -31,7 +31,7 @@ public class MoveCommand {
         //if a piece was captured through diagonal movement remove the captured piece
         int delta_row = to_row - from_row;
         int delta_col = to_col - from_col;
-        if (delta_col > 1) {
+        if (Math.abs(delta_col) > 1) {
             boardState[from_row + delta_row / 2][from_col + delta_col / 2] = 0;
         }
         fianco.setBoardState(boardState);
@@ -64,14 +64,17 @@ public class MoveCommand {
     private boolean checkIfMoveIsValid(Fianco fianco) {
         // Is the Move inside the Board
         if (!checkIfIndexIsInBounds(from_row) || !checkIfIndexIsInBounds(from_col) || !checkIfIndexIsInBounds(to_row) || !checkIfIndexIsInBounds(to_col)) {
+            Logger.getInstance().log("Movecommand out of bounds");
             return false;
         }
         // Does the Move Land on another Piece
         if (fianco.getBoardState()[to_row][to_col] != 0) {
+            Logger.getInstance().log("Movecommand lands on another piece");
             return false;
         }
         //Check if Moving Piece is from same Player
         if (fianco.getBoardState()[from_row][from_col] != player) {
+            Logger.getInstance().log("Movecommand tries to move piece from the other player");
             return false;
         }
         //Is the move from a valid move Set?
@@ -87,24 +90,43 @@ public class MoveCommand {
         boolean captureBottomRight = (player == 2 && to_row == from_row - 2 && from_col + 2 == to_col);
 
         //if capture check if capture is valid
-        if (captureTopLeft || captureBottomLeft || captureTopRight || captureBottomRight) {
-            return canCapture(from_row, from_col, player, fianco);
+        boolean[] captures = {captureBottomLeft, captureBottomRight, captureTopLeft, captureTopRight};
+        int[][] directions = {
+                {-1, -1},  // Bottom-left
+                {-1, +1},  // Bottom-right
+                {+1, -1},  // Top-left
+                {+1, +1}   // Top-right
+        };
+        for (int i = 0; i < captures.length; i++) {
+            if (captures[i]) {
+                if (!canCaptureInThisDirection(from_row, from_col, directions[i], player, fianco)) {
+                    Logger.getInstance().log("Movecommand tries to capture but cant");
+                    return false;
+                }
+            }
         }
 
         // if move check if you had to capture somewhere instead
         if (moveToTheLeft || moveToTheRight || moveUpwards || moveDownwards) {
             for (int i = 0; i < 9; i++) {
                 for (int j = 0; j < 9; j++) {
-                    if (canCapture(from_row, from_col, player, fianco)) {
+                    if (!(fianco.getBoardState()[i][j] == player)) {
+                        continue;
+                    }
+                    if (canCapture(i, j, player, fianco)) {
+                        Logger.getInstance().log("Movecommand tries to move but has to capture at: (" + i + "," + j + ")");
                         return false;
                     }
                 }
             }
-            return true;
         }
 
         // if not part of the valid move set return false
-        return false;
+        if (!(moveToTheLeft || moveToTheRight || moveUpwards || moveDownwards || captureTopLeft || captureTopRight || captureBottomLeft || captureBottomRight)) {
+            Logger.getInstance().log("Movecommand is not part of any valid move set");
+            return false;
+        }
+        return true;
 
     }
 
@@ -124,24 +146,31 @@ public class MoveCommand {
                 continue;
             }
             int[] direction = directions[i];
-            int di = direction[0];
-            int dj = direction[1];
-
-            int captureRow = row + di;
-            int captureCol = col + dj;
-            int landingRow = row + 2 * di;
-            int landingCol = col + 2 * dj;
-            int[][] board = fianco.getBoardState();
-            // Check if the capture and landing positions are within the board bounds
-            if (checkIfIndexIsInBounds(captureRow) && checkIfIndexIsInBounds(captureCol) && checkIfIndexIsInBounds(landingRow) && checkIfIndexIsInBounds(landingCol)) {
-                // Check if there's an opponent piece diagonally adjacent and the next square is empty
-                if (board[captureRow][captureCol] != 0 && board[captureRow][captureCol] != player && board[landingRow][landingCol] == 0) {
-                    return true;  // A capture is possible
-                }
+            if (canCaptureInThisDirection(row, col, direction, player, fianco)) {
+                return true;
             }
         }
 
         return false;  // No capture is possible
+    }
+
+    private static boolean canCaptureInThisDirection(int row, int col, int[] direction, int player, Fianco fianco) {
+        int di = direction[0];
+        int dj = direction[1];
+
+        int captureRow = row + di;
+        int captureCol = col + dj;
+        int landingRow = row + 2 * di;
+        int landingCol = col + 2 * dj;
+        int[][] board = fianco.getBoardState();
+        // Check if the capture and landing positions are within the board bounds
+        if (checkIfIndexIsInBounds(captureRow) && checkIfIndexIsInBounds(captureCol) && checkIfIndexIsInBounds(landingRow) && checkIfIndexIsInBounds(landingCol)) {
+            // Check if there's an opponent piece diagonally adjacent and the next square is empty
+            if (board[captureRow][captureCol] != 0 && board[captureRow][captureCol] != player && board[landingRow][landingCol] == 0) {
+                return true;  // A capture is possible
+            }
+        }
+        return false;
     }
 
     private static boolean checkIfIndexIsInBounds(int index) {
@@ -173,6 +202,62 @@ public class MoveCommand {
             return null;
         }
     }
+
+    public static ArrayList<MoveCommand> CreateAllPossibleMoveCommandsFromPosition(int[] from, int player, Fianco fianco) {
+        ArrayList<MoveCommand> moveCommands = new ArrayList<>();
+        if (player == 1) {
+            //Move
+            MoveCommand left = new MoveCommand(from[0], from[1], from[0], from[1] - 1, player);
+            MoveCommand right = new MoveCommand(from[0], from[1], from[0], from[1] + 1, player);
+            MoveCommand up = new MoveCommand(from[0], from[1], from[0] + 1, from[1], player);
+            //Capture
+            MoveCommand top_left = new MoveCommand(from[0], from[1], from[0] + 2, from[1] - 2, player);
+            MoveCommand top_right = new MoveCommand(from[0], from[1], from[0] + 2, from[1] + 2, player);
+            if (left.checkIfMoveIsValid(fianco)) {
+                moveCommands.add(left);
+            }
+            if (right.checkIfMoveIsValid(fianco)) {
+                moveCommands.add(right);
+            }
+            if (up.checkIfMoveIsValid(fianco)) {
+                moveCommands.add(up);
+            }
+            if (top_left.checkIfMoveIsValid(fianco)) {
+                moveCommands.add(top_left);
+            }
+            if (top_right.checkIfMoveIsValid(fianco)) {
+                moveCommands.add(top_right);
+            }
+
+
+        } else if (player == 2) {
+            //Move
+            MoveCommand left = new MoveCommand(from[0], from[1], from[0], from[1] - 1, player);
+            MoveCommand right = new MoveCommand(from[0], from[1], from[0], from[1] + 1, player);
+            MoveCommand down = new MoveCommand(from[0], from[1], from[0] - 1, from[1], player);
+            //Capture
+            MoveCommand bottom_left = new MoveCommand(from[0], from[1], from[0] - 2, from[1] - 2, player);
+            MoveCommand bottom_right = new MoveCommand(from[0], from[1], from[0] - 2, from[1] + 2, player);
+            if (left.checkIfMoveIsValid(fianco)) {
+                moveCommands.add(left);
+            }
+            if (right.checkIfMoveIsValid(fianco)) {
+                moveCommands.add(right);
+            }
+            if (down.checkIfMoveIsValid(fianco)) {
+                moveCommands.add(down);
+            }
+            if (bottom_left.checkIfMoveIsValid(fianco)) {
+                moveCommands.add(bottom_left);
+            }
+            if (bottom_right.checkIfMoveIsValid(fianco)) {
+                moveCommands.add(bottom_right);
+            }
+
+        }
+        return moveCommands;
+    }
+
 
     private static int[][] SubtractBoardStates(int[][] A, int[][] B) {
         int i, j;

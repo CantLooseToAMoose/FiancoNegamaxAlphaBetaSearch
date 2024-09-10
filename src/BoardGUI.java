@@ -83,11 +83,19 @@ public class BoardGUI extends JFrame implements LogListener {
 
         panel.add(Box.createRigidArea(new Dimension(0, 40)));  // Space between players and buttons
 
-        // Start/Restart Button
-        JButton startRestartButton = new JButton("Start/Restart");
-        startRestartButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        startRestartButton.addActionListener(e -> handleStartRestart());
-        panel.add(startRestartButton);
+        // Start Button
+        JButton continueButton = new JButton("Continue");
+        continueButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        continueButton.addActionListener(e -> handleContinue());
+        panel.add(continueButton);
+
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));  // Space between buttons
+
+        // Restart Button
+        JButton restartButton = new JButton("Start/Restart");
+        restartButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        restartButton.addActionListener(e -> handleRestart());
+        panel.add(restartButton);
 
         panel.add(Box.createRigidArea(new Dimension(0, 10)));  // Space between buttons
 
@@ -108,11 +116,21 @@ public class BoardGUI extends JFrame implements LogListener {
         return panel;
     }
 
-    private void handleStartRestart() {
-        // You can call your game controller's start or restart logic here
-        controller.startGame();
-        redrawBoard(controller.getBoardState());  // Reset the board
+
+    private void handleContinue() {
+
+        controller.continueGame();
+        redrawBoard(controller.getBoardState());
+        Logger.getInstance().log("Continue Game!");
     }
+
+    private void handleRestart() {
+        resetLogMessage();
+        Logger.getInstance().log("Game Started/Restarted!");
+        controller.restartGame();
+        redrawBoard(controller.getBoardState());
+    }
+
 
     private void handleUndo() {
         // Call your game controller's undo logic here
@@ -146,6 +164,11 @@ public class BoardGUI extends JFrame implements LogListener {
     private void showLogEvent(String event) {
         loggerTextArea.append(event + "\n");
         loggerTextArea.setCaretPosition(loggerTextArea.getDocument().getLength());  // Auto-scroll to the bottom
+    }
+
+    private void resetLogMessage(){
+        loggerTextArea.setText("");
+        loggerTextArea.setCaretPosition(loggerTextArea.getDocument().getLength());
     }
 
     @Override
@@ -257,9 +280,7 @@ public class BoardGUI extends JFrame implements LogListener {
 
     public void MoveAPiece(Tile fromTile, Tile toTile) {
         if (controller.move(fromTile.row, fromTile.col, toTile.row, toTile.col)) {
-            RoundPiece movingPiece = fromTile.piece;
-            fromTile.RemovePiece();
-            toTile.AddPiece(movingPiece);
+            redrawBoard(controller.getBoardState());
         }
     }
 }

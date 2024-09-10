@@ -11,6 +11,7 @@ public class GameClient {
     private BufferedWriter out;
 
     public GameClient(String host, int port, String playerId, IAgent aiAgent) throws IOException {
+        this.aiAgent = aiAgent;
         socket = new Socket(host, port);
         in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
@@ -23,13 +24,14 @@ public class GameClient {
     public void start() {
         try {
             while (true) {
+                System.out.println("Waiting for Server message");
                 String serverMessage = in.readLine(); // Waiting for server's message (polling)
                 if (serverMessage.startsWith(movePrefix)) {
                     String BoardArrayString = serverMessage.substring(movePrefix.length()); //Get only the Boardstate from Message
                     int[][] BoardArray = MessageLib.convertBoardStringToArray(BoardArrayString); // Convert to right Datatype
                     String move = MessageLib.convertBoardArrayToString(aiAgent.generateMove(BoardArray)); // AI logic to choose a move from
-
-                    out.write(move);
+                    System.out.println("Send Board back to Server");
+                    out.write(move + "\n");
                     out.flush(); // Send new Boardstate
 
                 }
@@ -41,7 +43,8 @@ public class GameClient {
 
 
     public static void main(String[] args) throws IOException {
-        GameClient client = new GameClient("localhost", 12345, "player1", null);
+        RandomFiancoAgent randomFiancoAgent = new RandomFiancoAgent(new Fianco(), 1);
+        GameClient client = new GameClient("localhost", 12345, "player1", randomFiancoAgent);
         client.start();
     }
 }

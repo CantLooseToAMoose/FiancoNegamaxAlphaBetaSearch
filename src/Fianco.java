@@ -72,5 +72,18 @@ public class Fianco {
         return false;
     }
 
+    public ArrayList<int[]> getAllPiecePositionsForPlayer(int player) {
+
+        ArrayList<int[]> positions = new ArrayList<>();
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                if (boardState[i][j] == player) {
+                    positions.add(new int[]{i, j});
+                }
+            }
+        }
+        return positions;
+    }
+
 
 }

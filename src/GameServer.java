@@ -3,22 +3,26 @@ import java.net.*;
 
 public class GameServer {
     private ServerSocket serverSocket;
+
+
     private Socket player1Socket;
     private Socket player2Socket;
 
-    private GameController controller; // Your game board logic goes here
+    private GameController controller;
     private boolean player1Connected = false;
     private boolean player2Connected = false;
 
     public GameServer(int port, GameController controller) throws IOException {
+        this.controller = controller;
         serverSocket = new ServerSocket(port);
 
     }
 
     public void start() {
         System.out.println("Waiting for AI clients...");
+        controller.AddGameServer(this);
         new Thread(this::acceptClients).start();
-        gameLoop();
+        controller.gameLoop();
     }
 
     private void acceptClients() {
@@ -31,9 +35,11 @@ public class GameServer {
                 if (playerId.equals("player1") && !player1Connected) {
                     player1Socket = clientSocket;
                     player1Connected = true;
+                    controller.AIPlayerJoined(1);
                     System.out.println("Player 1 connected.");
                 } else if (playerId.equals("player2") && !player2Connected) {
                     player2Socket = clientSocket;
+                    controller.AIPlayerJoined(2);
                     player2Connected = true;
                     System.out.println("Player 2 connected.");
                 }
@@ -43,30 +49,19 @@ public class GameServer {
         }
     }
 
-    private void gameLoop() {
-        while (!controller.gameIsRunning()) {
-            if (controller.getActivePlayer() == 1 && player1Connected) {
-                String move = getMoveFromPlayer(player1Socket, "player1");
-                int[][] newBoardState = MessageLib.convertBoardStringToArray(move);
-                controller.move(newBoardState);
-            } else if (controller.getActivePlayer() == 2 && player2Connected) {
-                String move = getMoveFromPlayer(player2Socket, "player2");
-                int[][] newBoardState = MessageLib.convertBoardStringToArray(move);
-                controller.move(newBoardState);
-            }
-            // Add game logic like checking if the game is over, switching turns, etc.
-        }
-    }
 
-    private String getMoveFromPlayer(Socket playerSocket, String playerId) {
+    public String getMoveFromPlayer(Socket playerSocket, String playerId) {
+        System.out.println("getMoveFromPlayer called for: " + playerId);
         if (playerSocket != null && !playerSocket.isClosed()) {
             try {
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter(playerSocket.getOutputStream()));
                 String boardState = MessageLib.convertBoardArrayToString(controller.getBoardState());
-                out.write("Your move:" + boardState);
+                System.out.println("Send move to Player: " + playerId);
+                out.write("Your move:" + boardState + "\n");
                 out.flush();
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(playerSocket.getInputStream()));
+                System.out.println("Waiting for move from Player: " + playerId);
                 return in.readLine(); // Wait for the client's move
             } catch (IOException e) {
                 e.printStackTrace();
@@ -93,9 +88,25 @@ public class GameServer {
         return MessageLib.convertBoardArrayToString(controller.getBoardState());
     }
 
+    public Socket getPlayer1Socket() {
+        return player1Socket;
+    }
+
+    public Socket getPlayer2Socket() {
+        return player2Socket;
+    }
+
+    public boolean isPlayer1Connected() {
+        return player1Connected;
+    }
+
+    public boolean isPlayer2Connected() {
+        return player2Connected;
+    }
+
 
     public static void main(String[] args) throws IOException {
-        GameServer server = new GameServer(12345, new GameController(null)); // Port 12345
+        GameServer server = new GameServer(12345, new GameController(new Fianco())); // Port 12345
         server.start();
     }
 }
