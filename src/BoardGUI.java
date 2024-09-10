@@ -3,28 +3,46 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-public class BoardGUI extends JFrame {
+public class BoardGUI extends JFrame implements LogListener {
     private static final int BOARD_SIZE = 9;  // 9x9 board
     private static final int TILE_SIZE = 80;  // Size of each tile
 
     private JPanel boardPanel;
+    private JPanel sidePanel;
 
     // Variables to track selected piece
     private Tile selectedTile = null;
 
     private GameController controller;
 
+    // Player information
+    private JLabel playerOneLabel;
+    private JLabel playerOneTypeLabel;
+    private JLabel playerTwoLabel;
+    private JLabel playerTwoTypeLabel;
+
+    // Logger for displaying events
+    private JTextArea loggerTextArea;
+    private Logger logger;
 
     public BoardGUI(GameController controller, int[][] boardState) {
         this.controller = controller;
         setTitle("9x9 Board Game");
-        setSize(BOARD_SIZE * TILE_SIZE, BOARD_SIZE * TILE_SIZE);
+        setSize((BOARD_SIZE * TILE_SIZE) + 200, BOARD_SIZE * TILE_SIZE); // Adding space for the side panel
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
 
         // Initialize and add the board panel
         boardPanel = createBoardPanel(boardState);
-        add(boardPanel);
+        add(boardPanel, BorderLayout.CENTER);
+        boolean isPlayerOneAI = false;
+        boolean isPlayerTwoAI = false;
+        // Initialize and add the side panel
+        sidePanel = createSidePanel(isPlayerOneAI, isPlayerTwoAI);
+        add(sidePanel, BorderLayout.EAST);
 
+        //subscribe to logger
+        Logger.getInstance().registerListener(this);
     }
 
     private JPanel createBoardPanel(int[][] boardState) {
@@ -42,15 +60,98 @@ public class BoardGUI extends JFrame {
         return panel;
     }
 
+    private JPanel createSidePanel(boolean isPlayerOneAI, boolean isPlayerTwoAI) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setPreferredSize(new Dimension(200, BOARD_SIZE * TILE_SIZE));
+
+        // Player One Info
+        playerOneLabel = new JLabel("Player 1");
+        playerOneLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        playerOneTypeLabel = new JLabel(isPlayerOneAI ? "AI" : "Human");
+        panel.add(playerOneLabel);
+        panel.add(playerOneTypeLabel);
+
+        panel.add(Box.createRigidArea(new Dimension(0, 20)));  // Space between players
+
+        // Player Two Info
+        playerTwoLabel = new JLabel("Player 2");
+        playerTwoLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        playerTwoTypeLabel = new JLabel(isPlayerTwoAI ? "AI" : "Human");
+        panel.add(playerTwoLabel);
+        panel.add(playerTwoTypeLabel);
+
+        panel.add(Box.createRigidArea(new Dimension(0, 40)));  // Space between players and buttons
+
+        // Start/Restart Button
+        JButton startRestartButton = new JButton("Start/Restart");
+        startRestartButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        startRestartButton.addActionListener(e -> handleStartRestart());
+        panel.add(startRestartButton);
+
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));  // Space between buttons
+
+        // Undo Button
+        JButton undoButton = new JButton("Undo");
+        undoButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        undoButton.addActionListener(e -> handleUndo());
+        panel.add(undoButton);
+
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));  // Space between buttons and logger
+
+        // Logger Text Area
+        loggerTextArea = new JTextArea(8, 15);  // 8 rows, 15 columns
+        loggerTextArea.setEditable(false);  // Make the logger read-only
+        JScrollPane scrollPane = new JScrollPane(loggerTextArea);  // Add scroll if needed
+        panel.add(scrollPane);
+
+        return panel;
+    }
+
+    private void handleStartRestart() {
+        // You can call your game controller's start or restart logic here
+        controller.startGame();
+        redrawBoard(controller.getBoardState());  // Reset the board
+    }
+
+    private void handleUndo() {
+        // Call your game controller's undo logic here
+        controller.undo();
+        redrawBoard(controller.getBoardState());  // Redraw the updated board
+    }
+
     private void redrawBoard(int[][] boardState) {
         // Remove the old board panel and add the new one
         getContentPane().remove(boardPanel);
         boardPanel = createBoardPanel(boardState);
-        add(boardPanel);
+        add(boardPanel, BorderLayout.CENTER);
         revalidate();
         repaint();
     }
 
+    // Methods to update the AI/Human labels for players
+    public void setPlayerOneTypeLabel(boolean isAI) {
+        playerOneTypeLabel.setText(isAI ? "AI" : "Human");
+        revalidate();
+        repaint();
+    }
+
+    public void setPlayerTwoTypeLabel(boolean isAI) {
+        playerTwoTypeLabel.setText(isAI ? "AI" : "Human");
+        revalidate();
+        repaint();
+    }
+
+    // Method to log events to the GUI
+    private void showLogEvent(String event) {
+        loggerTextArea.append(event + "\n");
+        loggerTextArea.setCaretPosition(loggerTextArea.getDocument().getLength());  // Auto-scroll to the bottom
+    }
+
+    @Override
+    public void onLogEvent(String logMessage) {
+        showLogEvent(logMessage);
+    }
 
     private static class RoundPiece extends JPanel {
         private int playerColor;  // 0 = empty, 1 = white, 2 = black
@@ -135,20 +236,17 @@ public class BoardGUI extends JFrame {
 
         private void handleMouseClick() {
             if (selectedTile == null && this.piece != null) {
-                System.out.println("Select piece on a Tile");
                 // Select the piece on this tile
                 selectedTile = this;
                 setBorder(BorderFactory.createLineBorder(Color.YELLOW, 3));
             } else if (selectedTile != null) {
                 if (this.piece == null) {
-                    System.out.println("Move Piece to different Tile");
                     // Move the piece to this empty tile
                     MoveAPiece(selectedTile, this);
                     // Deselect the tile
                     selectedTile.setBorder(null);
                     selectedTile = null;
                 } else {
-                    System.out.println("You can not Move a Piece on another Piece");
                     // If a piece is already selected and another piece is clicked, just deselect
                     selectedTile.setBorder(null);
                     selectedTile = null;
@@ -158,9 +256,10 @@ public class BoardGUI extends JFrame {
     }
 
     public void MoveAPiece(Tile fromTile, Tile toTile) {
-        RoundPiece movingPiece = fromTile.piece;
-        fromTile.RemovePiece();
-        toTile.AddPiece(movingPiece);
-        controller.move(fromTile.row, fromTile.col, toTile.row, toTile.col);
+        if (controller.move(fromTile.row, fromTile.col, toTile.row, toTile.col)) {
+            RoundPiece movingPiece = fromTile.piece;
+            fromTile.RemovePiece();
+            toTile.AddPiece(movingPiece);
+        }
     }
 }

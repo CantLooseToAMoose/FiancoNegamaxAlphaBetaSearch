@@ -44,17 +44,23 @@ public class Fianco {
 
         if (moveCommand.doMove(this)) {
             moveCommands.add(moveCommand);
+            Logger.getInstance().log("Move:" + moveCommand.toString());
             return true;
         }
         return false;
     }
 
-    public void Undo() {
-        MoveCommand moveCommand = moveCommands.remove(-1);
+    public boolean Undo() {
+        if (moveCommands.isEmpty()) {
+            return false;
+        }
+        MoveCommand moveCommand = moveCommands.remove(moveCommands.size() - 1);
         moveCommand.undoMove(this);
+        Logger.getInstance().log("Undo:" + moveCommand.toString());
+        return true;
     }
 
-    public boolean checkGameOver() {
+    public boolean checkForGameOver() {
         for (int i = 0; i < 9; i++) {
             if (boardState[0][i] == 2) {
                 return true;

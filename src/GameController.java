@@ -34,6 +34,13 @@ public class GameController {
         return false;
     }
 
+    public void undo() {
+
+        if (fianco.Undo()) {// Only switch players when successfully undoing a move
+            switchActivePlayer();
+        }
+    }
+
     public int getActivePlayer() {
         return activePlayer;
     }
@@ -43,7 +50,7 @@ public class GameController {
     }
 
     private boolean isGameOver() {
-        return fianco.checkGameOver();
+        return fianco.checkForGameOver();
     }
 
     private void switchActivePlayer() {

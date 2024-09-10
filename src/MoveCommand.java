@@ -227,5 +227,10 @@ public class MoveCommand {
         }
     }
 
+    @Override
+    public String toString() {
+        return "Player " + player + ": (" + from_row + "," + from_col + ")->(" + to_row + "," + to_col + ")";
+    }
+
 
 }
