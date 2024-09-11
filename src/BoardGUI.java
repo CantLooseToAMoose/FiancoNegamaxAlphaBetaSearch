@@ -138,7 +138,7 @@ public class BoardGUI extends JFrame implements LogListener {
         redrawBoard(controller.getBoardState());  // Redraw the updated board
     }
 
-    private void redrawBoard(int[][] boardState) {
+    public synchronized void redrawBoard(int[][] boardState) {
         // Remove the old board panel and add the new one
         getContentPane().remove(boardPanel);
         boardPanel = createBoardPanel(boardState);
@@ -166,7 +166,7 @@ public class BoardGUI extends JFrame implements LogListener {
         loggerTextArea.setCaretPosition(loggerTextArea.getDocument().getLength());  // Auto-scroll to the bottom
     }
 
-    private void resetLogMessage(){
+    private void resetLogMessage() {
         loggerTextArea.setText("");
         loggerTextArea.setCaretPosition(loggerTextArea.getDocument().getLength());
     }
@@ -223,7 +223,7 @@ public class BoardGUI extends JFrame implements LogListener {
             this.row = row;
             this.col = col;
             setPreferredSize(new Dimension(TILE_SIZE, TILE_SIZE));
-            setBackground((row + col) % 2 == 0 ? Color.LIGHT_GRAY : Color.DARK_GRAY);
+            setBackground((row + col) % 2 == 0 ? new Color(255,255,153) : new Color(153, 76, 0));
 
             // Add mouse listener to handle piece selection and movement
             addMouseListener(new MouseAdapter() {

@@ -43,8 +43,8 @@ public class GameClient {
 
 
     public static void main(String[] args) throws IOException {
-        RandomFiancoAgent randomFiancoAgent = new RandomFiancoAgent(new Fianco(), 1);
-        GameClient client = new GameClient("localhost", 12345, "player1", randomFiancoAgent);
+        RandomFiancoAgent randomFiancoAgent = new RandomFiancoAgent(new Fianco(), Integer.parseInt(args[1]));
+        GameClient client = new GameClient("localhost", 12345, args[0], randomFiancoAgent);
         client.start();
     }
 }

@@ -13,6 +13,6 @@ public class Main {
         });
         gameServer.start();
 
-        System.out.println("This works.");
+//        System.out.println("This works.");
     }
 }

@@ -4,7 +4,6 @@ import java.net.*;
 public class GameServer {
     private ServerSocket serverSocket;
 
-
     private Socket player1Socket;
     private Socket player2Socket;
 
@@ -14,7 +13,7 @@ public class GameServer {
 
     public GameServer(int port, GameController controller) throws IOException {
         this.controller = controller;
-        serverSocket = new ServerSocket(port);
+        serverSocket = new ServerSocket(port, 50, InetAddress.getByName("0.0.0.0"));
 
     }
 
@@ -22,7 +21,14 @@ public class GameServer {
         System.out.println("Waiting for AI clients...");
         controller.AddGameServer(this);
         new Thread(this::acceptClients).start();
-        controller.gameLoop();
+        new Thread(this::askForClientMoves).start();
+    }
+
+    public void askForClientMoves() {
+        while (true) {
+            System.out.println("Ask for AI");
+            controller.askForAiMoves();
+        }
     }
 
     private void acceptClients() {
@@ -50,19 +56,21 @@ public class GameServer {
     }
 
 
-    public String getMoveFromPlayer(Socket playerSocket, String playerId) {
+    public synchronized String getMoveFromPlayer(Socket playerSocket, String playerId) {
         System.out.println("getMoveFromPlayer called for: " + playerId);
         if (playerSocket != null && !playerSocket.isClosed()) {
             try {
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter(playerSocket.getOutputStream()));
                 String boardState = MessageLib.convertBoardArrayToString(controller.getBoardState());
-                System.out.println("Send move to Player: " + playerId);
+//                System.out.println("Send Boardstate" + boardState + "  to Player: " + playerId);
                 out.write("Your move:" + boardState + "\n");
                 out.flush();
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(playerSocket.getInputStream()));
                 System.out.println("Waiting for move from Player: " + playerId);
-                return in.readLine(); // Wait for the client's move
+                String answer = in.readLine();
+//                System.out.println("Received " + answer + " from Player: " + playerId);
+                return answer; // Wait for the client's move
             } catch (IOException e) {
                 e.printStackTrace();
             }

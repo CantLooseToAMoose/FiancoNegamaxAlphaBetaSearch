@@ -89,6 +89,12 @@ public class MoveCommand {
         boolean captureBottomLeft = (player == 2 && to_row == from_row - 2 && from_col - 2 == to_col);
         boolean captureBottomRight = (player == 2 && to_row == from_row - 2 && from_col + 2 == to_col);
 
+        // if not part of the valid move set return false
+        if (!(moveToTheLeft || moveToTheRight || moveUpwards || moveDownwards || captureTopLeft || captureTopRight || captureBottomLeft || captureBottomRight)) {
+            Logger.getInstance().log("Movecommand is not part of any valid move set");
+            return false;
+        }
+
         //if capture check if capture is valid
         boolean[] captures = {captureBottomLeft, captureBottomRight, captureTopLeft, captureTopRight};
         int[][] directions = {
@@ -119,12 +125,6 @@ public class MoveCommand {
                     }
                 }
             }
-        }
-
-        // if not part of the valid move set return false
-        if (!(moveToTheLeft || moveToTheRight || moveUpwards || moveDownwards || captureTopLeft || captureTopRight || captureBottomLeft || captureBottomRight)) {
-            Logger.getInstance().log("Movecommand is not part of any valid move set");
-            return false;
         }
         return true;
 
@@ -316,6 +316,5 @@ public class MoveCommand {
     public String toString() {
         return "Player " + player + ": (" + from_row + "," + from_col + ")->(" + to_row + "," + to_col + ")";
     }
-
 
 }

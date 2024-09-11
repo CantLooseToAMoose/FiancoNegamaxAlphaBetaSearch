@@ -22,57 +22,63 @@ public class GameController {
         this.gui = gui;
     }
 
-    public void gameLoop() {
+    public synchronized void askForAiMoves() {
+        if (!gameIsRunning) {
+            return;
+        }
         if (activePlayer == 1 && gameServer.isPlayer1Connected()) {
             String move = gameServer.getMoveFromPlayer(gameServer.getPlayer1Socket(), "player1");
             int[][] newBoardState = MessageLib.convertBoardStringToArray(move);
             if (!move(newBoardState)) {
                 Logger.getInstance().log("AIPlayer1 tried invalid Move,try Again");
-                gameLoop();
             }
         } else if (activePlayer == 2 && gameServer.isPlayer2Connected()) {
             String move = gameServer.getMoveFromPlayer(gameServer.getPlayer2Socket(), "player2");
             int[][] newBoardState = MessageLib.convertBoardStringToArray(move);
             if (!move(newBoardState)) {
                 Logger.getInstance().log("AIPlayer 2 tried invalid Move, try Again");
-                gameLoop();
             }
         }
     }
 
     public void continueGame() {
         gameIsRunning = true;
-        gameLoop();
     }
 
     public void restartGame() {
         activePlayer = 1;
+        System.out.println("Game started!");
         gameIsRunning = true;
         fianco.Restart();
-        gameLoop();
     }
 
 
-    public boolean move(int from_row, int from_col, int to_row, int to_col) {
+    public synchronized boolean move(int from_row, int from_col, int to_row, int to_col) {
         if (fianco.Move(new MoveCommand(from_row, from_col, to_row, to_col, activePlayer))) {
-            switchActivePlayer();
-            gameLoop();
+            moveMisc();
             return true;
         }
         return false;
     }
 
-    public boolean move(int[][] newBoardState) {
+    public synchronized boolean move(int[][] newBoardState) {
         MoveCommand moveCommand = MoveCommand.CreateMoveCommandFromConsecutiveBoardStates(fianco.getBoardState(), newBoardState, activePlayer);
         if (moveCommand == null) {
             return false;
         }
         if (fianco.Move(moveCommand)) {
-            switchActivePlayer();
-            gameLoop();
+            moveMisc();
             return true;
         }
         return false;
+    }
+
+    private synchronized void moveMisc() {
+        switchActivePlayer();
+        gui.redrawBoard(getBoardState());
+        if (isGameOver()) {
+            gameIsRunning = false;
+        }
     }
 
     public void undo() {
@@ -80,6 +86,7 @@ public class GameController {
         if (fianco.Undo()) {// Only switch players when successfully undoing a move
             switchActivePlayer();
         }
+        gameIsRunning = false;
     }
 
     public int getActivePlayer() {
@@ -102,7 +109,7 @@ public class GameController {
         }
     }
 
-    public int[][] getBoardState() {
+    public synchronized int[][] getBoardState() {
         return fianco.getBoardState();
     }
 
