@@ -73,12 +73,23 @@ public class BitmapFianco {
 
     }
 
+    @Override
+    public String toString() {
+        String ret = "";
+        for (int[] row : convertBitmapTo2DIntArray()) {
+            ret += Arrays.toString(row) + "\n";
+        }
+        ret = ret.replace("0", ".");
+        ret=ret.replace("[","");
+        ret=ret.replace("]","");
+        ret=ret.replace(",","");
+        return ret;
+    }
+
     public static void main(String[] args) {
         BitmapFianco bitmapFianco = new BitmapFianco();
         bitmapFianco.populateBoardBitmapsFrom2DIntArray(new Fianco().getBoardState());
-        String board = Arrays.deepToString(bitmapFianco.convertBitmapTo2DIntArray());
-        System.out.println(board);
-
+        System.out.println(bitmapFianco);
     }
 }
 
