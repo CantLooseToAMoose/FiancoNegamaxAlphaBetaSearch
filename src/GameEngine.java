@@ -1,6 +1,6 @@
 import javax.swing.*;
 
-public class Main {
+public class GameEngine {
     public static void main(String[] args) throws Exception {
 
         Fianco fianco = new Fianco();
@@ -12,7 +12,5 @@ public class Main {
             app.setVisible(true);
         });
         gameServer.start();
-
-//        System.out.println("This works.");
     }
 }
