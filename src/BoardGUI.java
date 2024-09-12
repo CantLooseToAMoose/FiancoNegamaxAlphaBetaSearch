@@ -10,6 +10,7 @@ public class BoardGUI extends JFrame implements LogListener {
     private JPanel boardPanel;
     private JPanel sidePanel;
 
+
     // Variables to track selected piece
     private Tile selectedTile = null;
 
@@ -27,8 +28,8 @@ public class BoardGUI extends JFrame implements LogListener {
 
     public BoardGUI(GameController controller, int[][] boardState) {
         this.controller = controller;
-        setTitle("9x9 Board Game");
-        setSize((BOARD_SIZE * TILE_SIZE) + 200, BOARD_SIZE * TILE_SIZE); // Adding space for the side panel
+        setTitle("Fianco");
+        setSize((BOARD_SIZE * TILE_SIZE) + 230, (BOARD_SIZE * TILE_SIZE) + 30); // Adding space for the side panels
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -37,17 +38,21 @@ public class BoardGUI extends JFrame implements LogListener {
         add(boardPanel, BorderLayout.CENTER);
         boolean isPlayerOneAI = false;
         boolean isPlayerTwoAI = false;
-        // Initialize and add the side panel
-        sidePanel = createSidePanel(isPlayerOneAI, isPlayerTwoAI);
+
+        // Initialize and add the right panel
+        sidePanel = createRightPanel(isPlayerOneAI, isPlayerTwoAI);
         add(sidePanel, BorderLayout.EAST);
+
 
         //subscribe to logger
         Logger.getInstance().registerListener(this);
     }
 
     private JPanel createBoardPanel(int[][] boardState) {
+        JPanel containerPanel=new JPanel(new BorderLayout());
         JPanel panel = new JPanel(new GridLayout(BOARD_SIZE, BOARD_SIZE));
-        for (int row = 0; row < BOARD_SIZE; row++) {
+        panel.setPreferredSize(new Dimension(BOARD_SIZE * TILE_SIZE, BOARD_SIZE * TILE_SIZE));
+        for (int row = BOARD_SIZE - 1; row >= 0; row--) {
             for (int col = 0; col < BOARD_SIZE; col++) {
                 Tile tile = new Tile(row, col);
                 if (boardState[row][col] != 0) {
@@ -57,13 +62,46 @@ public class BoardGUI extends JFrame implements LogListener {
                 panel.add(tile);
             }
         }
+        containerPanel.add(panel,BorderLayout.CENTER);
+        // Create Board Annotations
+        JPanel leftPanel = createLeftPanel();
+        containerPanel.add(leftPanel, BorderLayout.WEST);
+
+        JPanel bottomPanel = createBottomPanel();
+        containerPanel.add(bottomPanel, BorderLayout.SOUTH);
+        return containerPanel;
+    }
+
+    private JPanel createLeftPanel() {
+        JPanel panel = new JPanel(new GridLayout(BOARD_SIZE, 1));
+        panel.setPreferredSize(new Dimension(30, BOARD_SIZE * TILE_SIZE)); // Set width for numbering
+
+        for (int row = BOARD_SIZE; row > 0; row--) {
+            JLabel numberLabel = new JLabel(String.valueOf(row), SwingConstants.CENTER);
+            numberLabel.setPreferredSize(new Dimension(30, TILE_SIZE));
+            panel.add(numberLabel);
+        }
+
         return panel;
     }
 
-    private JPanel createSidePanel(boolean isPlayerOneAI, boolean isPlayerTwoAI) {
+    private JPanel createBottomPanel() {
+        JPanel panel = new JPanel(new GridLayout(1, BOARD_SIZE));
+        panel.setPreferredSize(new Dimension(BOARD_SIZE * TILE_SIZE, 30)); // Set height for letters
+
+        for (char letter = 'A'; letter <= 'I'; letter++) {
+            JLabel letterLabel = new JLabel(String.valueOf(letter), SwingConstants.CENTER);
+            letterLabel.setPreferredSize(new Dimension(TILE_SIZE, 30));
+            panel.add(letterLabel);
+        }
+
+        return panel;
+    }
+
+    private JPanel createRightPanel(boolean isPlayerOneAI, boolean isPlayerTwoAI) {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setPreferredSize(new Dimension(200, BOARD_SIZE * TILE_SIZE));
+        panel.setPreferredSize(new Dimension(200, (BOARD_SIZE * TILE_SIZE) + 30));
 
         // Player One Info
         playerOneLabel = new JLabel("Player 1");
@@ -190,6 +228,8 @@ public class BoardGUI extends JFrame implements LogListener {
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
+
+            // Set the color for the piece (white or black)
             if (playerColor == 1) {
                 g.setColor(Color.WHITE);  // White piece
             } else if (playerColor == 2) {
@@ -197,8 +237,15 @@ public class BoardGUI extends JFrame implements LogListener {
             } else {
                 return; // No piece to draw
             }
+
+            // Draw the filled oval representing the piece
             g.fillOval(0, 0, getWidth(), getHeight());
+
+            // Draw the black outline around the piece
+            g.setColor(Color.BLACK);
+            g.drawOval(0, 0, getWidth(), getHeight());
         }
+
 
         public int getPlayerColor() {
             return playerColor;
@@ -223,7 +270,7 @@ public class BoardGUI extends JFrame implements LogListener {
             this.row = row;
             this.col = col;
             setPreferredSize(new Dimension(TILE_SIZE, TILE_SIZE));
-            setBackground((row + col) % 2 == 0 ? new Color(255,255,153) : new Color(153, 76, 0));
+            setBackground((row + col) % 2 == 0 ? new Color(255, 255, 153) : new Color(153, 76, 0));
 
             // Add mouse listener to handle piece selection and movement
             addMouseListener(new MouseAdapter() {
