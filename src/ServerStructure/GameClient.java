@@ -1,6 +1,11 @@
+package ServerStructure;
+
+import AI.IAgent;
+import AI.RandomFiancoAgent;
+import FiancoEngine.Fianco;
+
 import java.io.*;
 import java.net.*;
-import java.util.Arrays;
 
 public class GameClient {
     private static final String movePrefix = "Your move:";

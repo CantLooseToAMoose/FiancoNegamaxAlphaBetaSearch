@@ -1,3 +1,11 @@
+package FiancoEngine;
+
+import FiancoEngine.BoardGUI;
+import FiancoEngine.Fianco;
+import FiancoEngine.Logger;
+import ServerStructure.GameServer;
+import ServerStructure.MessageLib;
+
 public class GameController {
     private Fianco fianco;
     private BoardGUI gui;

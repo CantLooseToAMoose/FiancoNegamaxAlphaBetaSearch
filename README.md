@@ -2,8 +2,8 @@
 
 ## How to use the Engine
 
-To start the Game Engine simply run the GameEngine Class. If you want to connect with an AIClient run the GameClient
-Class. When you start the GameEngine Class the game is not already running so
+To start the Game Engine simply run the FiancoEngine.GameEngine Class. If you want to connect with an AIClient run the ServerStructure.GameClient
+Class. When you start the FiancoEngine.GameEngine Class the game is not already running so
 you will have to press the Start/Restart Button. When you do this the game waits for Moves to be made by either a human
 Player through the GUI or through a connected Client.
 You can also undo moves using the Undo Button, but the Game pauses when you do it and you will have to hit the Continue
@@ -12,7 +12,7 @@ button to continue.
 ## Developers
 
 If you want to utilize this Engine for your own AI and develop using Java you can simply let your AI implement the
-IAgent Interface and inject it into a GameClient Object.
+AI.IAgent Interface and inject it into a ServerStructure.GameClient Object.
 When you do so the generateMove method, has to take the current BoardState represented as a 2D integer Array as an
 Argument and return the BoardState after the AI's move has been made.
 

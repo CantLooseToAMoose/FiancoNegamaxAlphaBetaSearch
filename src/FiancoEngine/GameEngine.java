@@ -1,3 +1,10 @@
+package FiancoEngine;
+
+import FiancoEngine.BoardGUI;
+import FiancoEngine.Fianco;
+import FiancoEngine.GameController;
+import ServerStructure.GameServer;
+
 import javax.swing.*;
 
 public class GameEngine {

@@ -1,3 +1,5 @@
+package FiancoEngine;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -22,13 +24,13 @@ public class BoardGUI extends JFrame implements LogListener {
     private JLabel playerTwoLabel;
     private JLabel playerTwoTypeLabel;
 
-    // Logger for displaying events
+    // FiancoEngine.Logger for displaying events
     private JTextArea loggerTextArea;
     private Logger logger;
 
     public BoardGUI(GameController controller, int[][] boardState) {
         this.controller = controller;
-        setTitle("Fianco");
+        setTitle("FiancoEngine.Fianco");
         setSize((BOARD_SIZE * TILE_SIZE) + 230, (BOARD_SIZE * TILE_SIZE) + 30); // Adding space for the side panels
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
@@ -145,7 +147,7 @@ public class BoardGUI extends JFrame implements LogListener {
 
         panel.add(Box.createRigidArea(new Dimension(0, 10)));  // Space between buttons and logger
 
-        // Logger Text Area
+        // FiancoEngine.Logger Text Area
         loggerTextArea = new JTextArea(8, 15);  // 8 rows, 15 columns
         loggerTextArea.setEditable(false);  // Make the logger read-only
         JScrollPane scrollPane = new JScrollPane(loggerTextArea);  // Add scroll if needed

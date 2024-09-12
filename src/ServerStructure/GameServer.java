@@ -1,3 +1,8 @@
+package ServerStructure;
+
+import FiancoEngine.Fianco;
+import FiancoEngine.GameController;
+
 import java.io.*;
 import java.net.*;
 

@@ -1,3 +1,5 @@
+package FiancoEngine;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +42,3 @@ public class Logger {
     }
 }
 
-// Interface for log listeners
-interface LogListener {
-    void onLogEvent(String logMessage);
-}

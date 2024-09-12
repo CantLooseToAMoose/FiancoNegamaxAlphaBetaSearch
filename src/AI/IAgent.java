@@ -1,3 +1,5 @@
+package AI;
+
 public interface IAgent {
 
     public void resetBoard(int[][] boardState);

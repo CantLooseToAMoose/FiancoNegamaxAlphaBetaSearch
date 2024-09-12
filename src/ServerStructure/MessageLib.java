@@ -1,3 +1,5 @@
+package ServerStructure;
+
 import com.google.gson.Gson;
 
 import java.util.Arrays;
