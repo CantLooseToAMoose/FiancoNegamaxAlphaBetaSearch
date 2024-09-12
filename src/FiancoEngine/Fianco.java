@@ -71,7 +71,22 @@ public class Fianco {
                 return true;
             }
         }
-        return false;
+        boolean thereIsAPlayer1Piece = false;
+        boolean thereIsAPlayer2Piece = false;
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                if (boardState[i][j] == 1) {
+                    thereIsAPlayer1Piece = true;
+                }
+                if (boardState[i][j] == 2) {
+                    thereIsAPlayer2Piece = true;
+                }
+                if (thereIsAPlayer1Piece && thereIsAPlayer2Piece) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     public ArrayList<int[]> getAllPiecePositionsForPlayer(int player) {
