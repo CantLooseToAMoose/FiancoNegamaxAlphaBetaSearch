@@ -22,6 +22,6 @@ It is also possible to use different Programming Languages. You only need to con
 connection, send a Message containing your PlayerID (either "player1" or "player2").
 After Connection, the Server will ask you to generate a Move by sending you a Message with the following pattern: 
 
-`"Your Move:[[1, 1, 1, 1, 1, 1, 1, 1, 1][0, 1, 0, 0, 0, 0, 0, 1, 0}][0, 0, 1, 0, 0, 0, 1, 0, 0][0, 0, 0, 1, 0, 1, 0, 0, 0][0, 0, 0, 0, 0, 0, 0, 0, 0][0, 0, 0, 2, 0, 2, 0, 0, 0][0, 0, 2, 0, 0, 0, 2, 0, 0][0, 2, 0, 0, 0, 0, 0, 2, 0][2, 2, 2, 2, 2, 2, 2, 2, 2]]"`
+`"Your Move:[[1, 1, 1, 1, 1, 1, 1, 1, 1][0, 1, 0, 0, 0, 0, 0, 1, 0][0, 0, 1, 0, 0, 0, 1, 0, 0][0, 0, 0, 1, 0, 1, 0, 0, 0][0, 0, 0, 0, 0, 0, 0, 0, 0][0, 0, 0, 2, 0, 2, 0, 0, 0][0, 0, 2, 0, 0, 0, 2, 0, 0][0, 2, 0, 0, 0, 0, 0, 2, 0][2, 2, 2, 2, 2, 2, 2, 2, 2]]"`
 
 To which the Client will answer with the new Boardstate in the same Format but without the "Your Move:" Prefix

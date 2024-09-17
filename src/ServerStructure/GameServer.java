@@ -31,7 +31,7 @@ public class GameServer {
 
     public void askForClientMoves() {
         while (true) {
-            System.out.println("Ask for AI");
+//            System.out.println("Ask for AI");
             controller.askForAiMoves();
         }
     }
@@ -67,14 +67,14 @@ public class GameServer {
             try {
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter(playerSocket.getOutputStream()));
                 String boardState = MessageLib.convertBoardArrayToString(controller.getBoardState());
-//                System.out.println("Send Boardstate" + boardState + "  to Player: " + playerId);
+                System.out.println("Send Boardstate" + boardState + "  to Player: " + playerId);
                 out.write("Your move:" + boardState + "\n");
                 out.flush();
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(playerSocket.getInputStream()));
                 System.out.println("Waiting for move from Player: " + playerId);
                 String answer = in.readLine();
-//                System.out.println("Received " + answer + " from Player: " + playerId);
+                System.out.println("Received " + answer + " from Player: " + playerId);
                 return answer; // Wait for the client's move
             } catch (IOException e) {
                 e.printStackTrace();
