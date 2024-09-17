@@ -63,10 +63,35 @@ public class BitMaskCreationHelper {
             {1, 1, 1, 1, 1, 1, 1, 1, 1},
             {1, 1, 1, 1, 1, 1, 1, 1, 1}};
 
+    public static final int[][] southBorderMask = new int[][]{
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {1, 1, 1, 1, 1, 1, 1, 1, 1}};
+
+    public static final int[][] northBorderMask = new int[][]{
+            {1, 1, 1, 1, 1, 1, 1, 1, 1},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0}};
+
+    public static final int[][] BitMapMask = new int[9][9];
+
+
     public static long[] turn2DIntArrayBitMaskToLongArray(int[][] board) {
         BitmapFianco bitmapFianco = new BitmapFianco();
         bitmapFianco.populateBoardBitmapsFrom2DIntArray(board);
-        return bitmapFianco.getPlayer1Board();
+        return BasicBitOps.inv(bitmapFianco.getPlayer1Board());
     }
 
     public static long[] getRightBorderMask() {
@@ -85,12 +110,24 @@ public class BitMaskCreationHelper {
         return turn2DIntArrayBitMaskToLongArray(rightDoubleBorderMask);
     }
 
-    public static long[] getNorthDoubleBorderMask(){
+    public static long[] getNorthDoubleBorderMask() {
         return turn2DIntArrayBitMaskToLongArray(northDoubleBorderMask);
     }
 
-    public static long[] getSouthDoubleBorderMask(){
+    public static long[] getSouthDoubleBorderMask() {
         return turn2DIntArrayBitMaskToLongArray(southDoubleBorderMask);
+    }
+
+    public static long[] getSouthBorderMask() {
+        return turn2DIntArrayBitMaskToLongArray(southBorderMask);
+    }
+
+    public static long[] getNorthBorderMask() {
+        return turn2DIntArrayBitMaskToLongArray(northBorderMask);
+    }
+
+    public static long[] getBitMapMask() {
+        return turn2DIntArrayBitMaskToLongArray(BitMapMask);
     }
 
 }

@@ -148,7 +148,7 @@ public class BitmapFianco {
         bitmapFianco.populateBoardBitmapsFrom2DIntArray(new Fianco().getBoardState());
 //        ShiftPlayersDown1Row
         long[] player1 = bitmapFianco.getPlayer1Board();
-        player1 = BasicBitOps.bitShiftL(player1, 9);
+        player1 = BasicBitOps.shiftNorth(player1, 1);
         bitmapFianco.setPlayer1Board(player1);
 
 //        long[] player2 = bitmapFianco.getPlayer2Board();
