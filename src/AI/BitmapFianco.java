@@ -2,7 +2,6 @@ package AI;
 
 import FiancoEngine.Fianco;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 
 public class BitmapFianco {
@@ -10,6 +9,44 @@ public class BitmapFianco {
     private long board_full_2;
     private long board_partial_1;
     private long board_partial_2;
+
+    private static final int fillUpUntil = 64;
+
+    public BitmapFianco() {
+    }
+
+    public BitmapFianco(long board_full_1, long board_full_2, long board_partial_1, long board_partial_2) {
+        this.board_full_1 = board_full_1;
+        this.board_full_2 = board_full_2;
+        this.board_partial_1 = board_partial_1;
+        this.board_partial_2 = board_partial_2;
+    }
+
+    public BitmapFianco(long[] player1, long[] player2) {
+        this.board_full_1 = player1[0];
+        this.board_partial_1 = player1[1];
+        this.board_full_2 = player2[0];
+        this.board_partial_2 = player2[1];
+    }
+
+    public long[] getPlayer1Board() {
+        return new long[]{this.board_full_1, this.board_full_2};
+    }
+
+    public long[] getPlayer2Board() {
+        return new long[]{this.board_full_2, this.board_partial_2};
+    }
+
+    public void setPlayer1Board(long[] player1Board) {
+        this.board_full_1 = player1Board[0];
+        this.board_partial_1 = player1Board[1];
+    }
+
+    public void setPlayer2Board(long[] player2Board) {
+        this.board_full_2 = player2Board[0];
+        this.board_partial_2 = player2Board[1];
+    }
+
 
     public void populateBoardBitmapsFrom2DIntArray(int[][] boardState) {
         StringBuilder player1Pieces = new StringBuilder();
@@ -26,20 +63,30 @@ public class BitmapFianco {
                 } else if (piece == 2) {
                     player1Pieces.append(0);
                     player2Pieces.append(1);
+                } else {
+                    System.out.println("There is a different value than 0,1,2 on the int[][] Board");
                 }
             }
         }
-        String player1Full = player1Pieces.substring(0, 64);
-        String player2Full = player2Pieces.substring(0, 64);
-        String player1Partial = player1Pieces.substring(64, 81);
-        String player2Partial = player2Pieces.substring(64, 81);
+        String player1Full = player1Pieces.substring(0, fillUpUntil);
+        System.out.println(player1Full);
+        String player2Full = player2Pieces.substring(0, fillUpUntil);
+        System.out.println(player2Full);
+        String player1Partial = player1Pieces.substring(fillUpUntil, 81);
+        System.out.println(player1Partial);
+        String player2Partial = player2Pieces.substring(fillUpUntil, 81);
+        System.out.println(player2Partial);
         this.board_full_1 = Long.parseUnsignedLong(player1Full, 2);
         this.board_full_2 = Long.parseUnsignedLong(player2Full, 2);
-        this.board_partial_1 = Long.parseUnsignedLong(player1Partial, 2);
-        this.board_partial_2 = Long.parseUnsignedLong(player2Partial, 2);
+        this.board_partial_1 = Long.parseUnsignedLong(String.format("%-64s", player1Partial).replace(' ', '0'), 2);
+        this.board_partial_2 = Long.parseUnsignedLong(String.format("%-64s", player2Partial).replace(' ', '0'), 2);
     }
 
     public int[][] convertBitmapTo2DIntArray() {
+        System.out.println("FullBinaryLong Player1:" + returnFullBinaryString(board_full_1));
+        System.out.println("PartialBinaryLong Player1:" + returnFullBinaryString(board_partial_1));
+        System.out.println("FullBinaryLong Player2:" + returnFullBinaryString(board_full_2));
+        System.out.println("PartialBinaryLong Player2:" + returnFullBinaryString(board_partial_2));
         int[][] array = new int[9][9];
         int string_position;
         for (int i = 0; i < 9; i++) {
@@ -47,11 +94,13 @@ public class BitmapFianco {
                 string_position = 9 * i + j;
                 int piece1;
                 int piece2;
-                if (string_position < 64) {
+                if (string_position < fillUpUntil) {
+//                    string_position += fillUpUntil;
                     piece1 = Character.getNumericValue(returnFullBinaryString(board_full_1).charAt(string_position));
                     piece2 = Character.getNumericValue(returnFullBinaryString(board_full_2).charAt(string_position));
                 } else {
-                    string_position += 64 - 81;
+                    string_position -= fillUpUntil;
+//                    string_position += 64 - (81 - fillUpUntil);
                     piece1 = Character.getNumericValue(returnFullBinaryString(board_partial_1).charAt(string_position));
                     piece2 = Character.getNumericValue(returnFullBinaryString(board_partial_2).charAt(string_position));
                 }
@@ -68,10 +117,12 @@ public class BitmapFianco {
     }
 
     private String returnFullBinaryString(long number) {
-        String ret = String.format("%64s", Long.toBinaryString(number)).replace(" ", "0");
+        String ret = Long.toBinaryString(number); // Convert number to binary
+        ret = String.format("%64s", ret).replace(' ', '0'); // Left-justify and fill with zeros on the right
+//        System.out.println("BinaryStringLength:" + ret.length() + " String:" + ret);
         return ret;
-
     }
+
 
     @Override
     public String toString() {
@@ -80,15 +131,32 @@ public class BitmapFianco {
             ret += Arrays.toString(row) + "\n";
         }
         ret = ret.replace("0", ".");
-        ret=ret.replace("[","");
-        ret=ret.replace("]","");
-        ret=ret.replace(",","");
+        ret = ret.replace("[", "");
+        ret = ret.replace("]", "");
+        ret = ret.replace(",", "");
         return ret;
     }
+
+    private long[] allPossibleForwardMovements(long[] bitmap, boolean isPlayerOne) {
+
+        return null;
+    }
+
 
     public static void main(String[] args) {
         BitmapFianco bitmapFianco = new BitmapFianco();
         bitmapFianco.populateBoardBitmapsFrom2DIntArray(new Fianco().getBoardState());
+//        ShiftPlayersDown1Row
+        long[] player1 = bitmapFianco.getPlayer1Board();
+        player1 = BasicBitOps.bitShiftL(player1, 9);
+        bitmapFianco.setPlayer1Board(player1);
+
+//        long[] player2 = bitmapFianco.getPlayer2Board();
+//        player2 = BitOps.shiftR(player2, 9);
+//        bitmapFianco.setPlayer2Board(player2);
+        bitmapFianco.setPlayer2Board(new long[2]);
+
+
         System.out.println(bitmapFianco);
     }
 }
