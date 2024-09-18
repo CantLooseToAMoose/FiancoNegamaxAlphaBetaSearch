@@ -87,6 +87,11 @@ public class BitMaskCreationHelper {
 
     public static final int[][] BitMapMask = new int[9][9];
 
+    public static long[] getFreeTilesBitMask(long[] board1, long[] board2) {
+        long[] combined = BasicBitOps.or(board1, board2);
+        return BasicBitOps.inv(combined);
+    }
+
 
     public static long[] turn2DIntArrayBitMaskToLongArray(int[][] board) {
         BitmapFianco bitmapFianco = new BitmapFianco();
