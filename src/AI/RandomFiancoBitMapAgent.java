@@ -25,7 +25,7 @@ public class RandomFiancoBitMapAgent implements IAgent {
         long[] player2Board = fianco.getPlayer2Board();
         long[] board = new long[]{player1Board[0], player1Board[1], player2Board[0], player2Board[1]};
         LinkedList<long[]> moves = BitMapMoveGenerator.populateQueueWithAllPossibleMoves(board, player == 1);
-        System.out.println(fianco);
+//        System.out.println(fianco);
         // Step 1: Get the size of the list
         int size = moves.size();
 
@@ -37,8 +37,8 @@ public class RandomFiancoBitMapAgent implements IAgent {
         long[] randomMove = moves.get(randomIndex);
 
         long[] newBoard = BitMapMoveGenerator.updateBoardStateFromMove(board, randomMove, player == 1);
-        System.out.println("Board after generated Move:");
-        BitmapFianco.ShowBitBoard(newBoard);
+//        System.out.println("Board after generated Move:");
+//        BitmapFianco.ShowBitBoard(newBoard);
 
         fianco.setPlayer1Board(new long[]{newBoard[0], newBoard[1]});
         fianco.setPlayer2Board(new long[]{newBoard[2], newBoard[3]});

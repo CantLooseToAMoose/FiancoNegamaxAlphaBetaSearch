@@ -31,13 +31,13 @@ public class GameClient {
     public void start() {
         try {
             while (true) {
-                System.out.println("Waiting for Server message");
+//                System.out.println("Waiting for Server message");
                 String serverMessage = in.readLine(); // Waiting for server's message (polling)
                 if (serverMessage.startsWith(movePrefix)) {
                     String BoardArrayString = serverMessage.substring(movePrefix.length()); //Get only the Boardstate from Message
                     int[][] BoardArray = MessageLib.convertBoardStringToArray(BoardArrayString); // Convert to right Datatype
                     String move = MessageLib.convertBoardArrayToString(aiAgent.generateMove(BoardArray)); // AI logic to choose a move from
-                    System.out.println("Send Board back to Server");
+//                    System.out.println("Send Board back to Server");
                     out.write(move + "\n");
                     out.flush(); // Send new Boardstate
 

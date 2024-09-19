@@ -1,10 +1,7 @@
 package AI;
 
 public class AdvancedBitOps {
-
-//    TODO: add the right masks for the possible moves e.g. eastboardermask for possible east masks
-
-    public static long[] possibleWestMovePieces(long[] board1, long[] board2) {
+        public static long[] possibleWestMovePieces(long[] board1, long[] board2) {
         long[] board1_shifted = BasicBitOps.shiftEast(board1, 1);
         long[] board2_shifted = BasicBitOps.shiftEast(board2, 1);
         board1 = BasicBitOps.and(board1, BasicBitOps.WEST_BORDER_MASK);
