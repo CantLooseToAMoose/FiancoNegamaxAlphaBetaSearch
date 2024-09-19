@@ -145,6 +145,27 @@ public class BitmapFianco {
         return null;
     }
 
+    public static void ShowBitBoard(long[] board) {
+        BitmapFianco bitmapFianco = new BitmapFianco();
+        if (board.length == 2) {
+            bitmapFianco.setPlayer1Board(board);
+            System.out.println("Player1Board");
+            System.out.println(bitmapFianco);
+        } else if (board.length == 4) {
+            bitmapFianco.setPlayer1Board(new long[]{board[0], board[1]});
+            System.out.println("Player1Board");
+            System.out.println(bitmapFianco);
+            bitmapFianco.setPlayer1Board(new long[]{board[2], board[3]});
+            System.out.println("Player2Board");
+            System.out.println(bitmapFianco);
+            bitmapFianco.setPlayer1Board(new long[]{board[0], board[1]});
+            bitmapFianco.setPlayer2Board(new long[]{board[2], board[3]});
+            System.out.println("Complete Board");
+            System.out.println(bitmapFianco);
+
+        }
+    }
+
 
     public static void main(String[] args) {
         BitmapFianco bitmapFianco = new BitmapFianco();

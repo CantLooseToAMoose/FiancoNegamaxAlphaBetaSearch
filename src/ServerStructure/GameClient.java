@@ -1,7 +1,9 @@
 package ServerStructure;
 
+import AI.BitmapFianco;
 import AI.IAgent;
 import AI.RandomFiancoAgent;
+import AI.RandomFiancoBitMapAgent;
 import FiancoEngine.Fianco;
 
 import java.io.*;
@@ -48,7 +50,10 @@ public class GameClient {
 
 
     public static void main(String[] args) throws IOException {
-        RandomFiancoAgent randomFiancoAgent = new RandomFiancoAgent(new Fianco(), Integer.parseInt(args[1]));
+//        RandomFiancoAgent randomFiancoAgent = new RandomFiancoAgent(new Fianco(), Integer.parseInt(args[1]));
+        BitmapFianco bitmapFianco = new BitmapFianco();
+        bitmapFianco.populateBoardBitmapsFrom2DIntArray(new Fianco().getBoardState());
+        RandomFiancoBitMapAgent randomFiancoAgent = new RandomFiancoBitMapAgent(bitmapFianco, Integer.parseInt(args[1]));
         GameClient client = new GameClient("localhost", 12345, args[0], randomFiancoAgent);
         client.start();
     }

@@ -38,12 +38,16 @@ public class GameController {
             String move = gameServer.getMoveFromPlayer(gameServer.getPlayer1Socket(), "player1");
             int[][] newBoardState = MessageLib.convertBoardStringToArray(move);
             if (!move(newBoardState)) {
+                System.out.println("Stop Game after Wrong Move! (in GameController)");
+                gameIsRunning = false;
                 Logger.getInstance().log("AIPlayer1 tried invalid Move,try Again");
             }
         } else if (activePlayer == 2 && gameServer.isPlayer2Connected()) {
             String move = gameServer.getMoveFromPlayer(gameServer.getPlayer2Socket(), "player2");
             int[][] newBoardState = MessageLib.convertBoardStringToArray(move);
             if (!move(newBoardState)) {
+                System.out.println("Stop Game after Wrong Move! (in GameController)");
+                gameIsRunning = false;
                 Logger.getInstance().log("AIPlayer 2 tried invalid Move, try Again");
             }
         }
@@ -77,8 +81,10 @@ public class GameController {
         if (fianco.Move(moveCommand)) {
             moveMisc();
             return true;
+        } else {
+            System.out.println("Illegal Movecommand with Move: " + moveCommand);
+            return false;
         }
-        return false;
     }
 
     private synchronized void moveMisc() {

@@ -63,7 +63,7 @@ public class BitMaskCreationHelper {
             {1, 1, 1, 1, 1, 1, 1, 1, 1},
             {1, 1, 1, 1, 1, 1, 1, 1, 1}};
 
-    public static final int[][] southBorderMask = new int[][]{
+    public static final int[][] southBorderMaskArray = new int[][]{
             {0, 0, 0, 0, 0, 0, 0, 0, 0},
             {0, 0, 0, 0, 0, 0, 0, 0, 0},
             {0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -74,7 +74,7 @@ public class BitMaskCreationHelper {
             {0, 0, 0, 0, 0, 0, 0, 0, 0},
             {1, 1, 1, 1, 1, 1, 1, 1, 1}};
 
-    public static final int[][] northBorderMask = new int[][]{
+    public static final int[][] northBorderMaskArray = new int[][]{
             {1, 1, 1, 1, 1, 1, 1, 1, 1},
             {0, 0, 0, 0, 0, 0, 0, 0, 0},
             {0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -84,6 +84,49 @@ public class BitMaskCreationHelper {
             {0, 0, 0, 0, 0, 0, 0, 0, 0},
             {0, 0, 0, 0, 0, 0, 0, 0, 0},
             {0, 0, 0, 0, 0, 0, 0, 0, 0}};
+
+    public static final int[][] captureNorthEastBitMask = new int[][]{
+            {1, 1, 1, 1, 1, 1, 1, 1, 1},
+            {1, 1, 1, 1, 1, 1, 1, 1, 1},
+            {0, 0, 0, 0, 0, 0, 0, 1, 1},
+            {0, 0, 0, 0, 0, 0, 0, 1, 1},
+            {0, 0, 0, 0, 0, 0, 0, 1, 1},
+            {0, 0, 0, 0, 0, 0, 0, 1, 1},
+            {0, 0, 0, 0, 0, 0, 0, 1, 1},
+            {0, 0, 0, 0, 0, 0, 0, 1, 1},
+            {0, 0, 0, 0, 0, 0, 0, 1, 1}};
+    public static final int[][] captureNorthWestBitMask = new int[][]{
+            {1, 1, 1, 1, 1, 1, 1, 1, 1},
+            {1, 1, 1, 1, 1, 1, 1, 1, 1},
+            {1, 1, 0, 0, 0, 0, 0, 0, 0},
+            {1, 1, 0, 0, 0, 0, 0, 0, 0},
+            {1, 1, 0, 0, 0, 0, 0, 0, 0},
+            {1, 1, 0, 0, 0, 0, 0, 0, 0},
+            {1, 1, 0, 0, 0, 0, 0, 0, 0},
+            {1, 1, 0, 0, 0, 0, 0, 0, 0},
+            {1, 1, 0, 0, 0, 0, 0, 0, 0}};
+
+    public static final int[][] captureSouthWestMaskArray = new int[][]{
+            {1, 1, 0, 0, 0, 0, 0, 0, 0},
+            {1, 1, 0, 0, 0, 0, 0, 0, 0},
+            {1, 1, 0, 0, 0, 0, 0, 0, 0},
+            {1, 1, 0, 0, 0, 0, 0, 0, 0},
+            {1, 1, 0, 0, 0, 0, 0, 0, 0},
+            {1, 1, 0, 0, 0, 0, 0, 0, 0},
+            {1, 1, 0, 0, 0, 0, 0, 0, 0},
+            {1, 1, 1, 1, 1, 1, 1, 1, 1},
+            {1, 1, 1, 1, 1, 1, 1, 1, 1}};
+
+    public static final int[][] captureSouthEastMaskArray = new int[][]{
+            {0, 0, 0, 0, 0, 0, 0, 1, 1},
+            {0, 0, 0, 0, 0, 0, 0, 1, 1},
+            {0, 0, 0, 0, 0, 0, 0, 1, 1},
+            {0, 0, 0, 0, 0, 0, 0, 1, 1},
+            {0, 0, 0, 0, 0, 0, 0, 1, 1},
+            {0, 0, 0, 0, 0, 0, 0, 1, 1},
+            {0, 0, 0, 0, 0, 0, 0, 1, 1},
+            {1, 1, 1, 1, 1, 1, 1, 1, 1},
+            {1, 1, 1, 1, 1, 1, 1, 1, 1}};
 
     public static final int[][] BitMapMask = new int[9][9];
 
@@ -99,19 +142,19 @@ public class BitMaskCreationHelper {
         return BasicBitOps.inv(bitmapFianco.getPlayer1Board());
     }
 
-    public static long[] getRightBorderMask() {
+    public static long[] getEastBorderMask() {
         return turn2DIntArrayBitMaskToLongArray(rightBorderMask);
     }
 
-    public static long[] getLeftBorderMask() {
+    public static long[] getWestBorderMask() {
         return turn2DIntArrayBitMaskToLongArray(leftBorderMask);
     }
 
-    public static long[] getLeftDoubleBorderMask() {
+    public static long[] getWestDoubleBorderMask() {
         return turn2DIntArrayBitMaskToLongArray(leftDoubleBorderMask);
     }
 
-    public static long[] getRightDoubleBorderMask() {
+    public static long[] getEastDoubleBorderMask() {
         return turn2DIntArrayBitMaskToLongArray(rightDoubleBorderMask);
     }
 
@@ -123,16 +166,32 @@ public class BitMaskCreationHelper {
         return turn2DIntArrayBitMaskToLongArray(southDoubleBorderMask);
     }
 
-    public static long[] getSouthBorderMask() {
-        return turn2DIntArrayBitMaskToLongArray(southBorderMask);
+    public static long[] getSouthBorderMaskArray() {
+        return turn2DIntArrayBitMaskToLongArray(southBorderMaskArray);
     }
 
-    public static long[] getNorthBorderMask() {
-        return turn2DIntArrayBitMaskToLongArray(northBorderMask);
+    public static long[] getNorthBorderMaskArray() {
+        return turn2DIntArrayBitMaskToLongArray(northBorderMaskArray);
     }
 
     public static long[] getBitMapMask() {
         return turn2DIntArrayBitMaskToLongArray(BitMapMask);
+    }
+
+    public static long[] getCaptureSouthWestMaskArray() {
+        return turn2DIntArrayBitMaskToLongArray(captureSouthWestMaskArray);
+    }
+
+    public static long[] getCaptureSouthEastMaskArray() {
+        return turn2DIntArrayBitMaskToLongArray(captureSouthEastMaskArray);
+    }
+
+    public static long[] getCaptureNorthEastMask() {
+        return turn2DIntArrayBitMaskToLongArray(captureNorthEastBitMask);
+    }
+
+    public static long[] getCaptureNorthWestMask() {
+        return turn2DIntArrayBitMaskToLongArray(captureNorthWestBitMask);
     }
 
 }

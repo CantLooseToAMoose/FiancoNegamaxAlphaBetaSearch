@@ -3,29 +3,35 @@ package AI;
 public class BasicBitOps {
 
 
-    public static final long[] rightBorderMask = BitMaskCreationHelper.getRightBorderMask();
-    public static final long[] leftBorderMask = BitMaskCreationHelper.getLeftBorderMask();
-    public static final long[] leftDoubleBorderMask = BitMaskCreationHelper.getLeftDoubleBorderMask();
-    public static final long[] rightDoubleBorderMask = BitMaskCreationHelper.getRightDoubleBorderMask();
+    public static final long[] EAST_BORDER_MASK = BitMaskCreationHelper.getEastBorderMask();
+    public static final long[] WEST_BORDER_MASK = BitMaskCreationHelper.getWestBorderMask();
+    public static final long[] leftDoubleBorderMask = BitMaskCreationHelper.getWestDoubleBorderMask();
+    public static final long[] rightDoubleBorderMask = BitMaskCreationHelper.getEastDoubleBorderMask();
 
-    public static final long[] northBorderMask = BitMaskCreationHelper.getNorthBorderMask();
-    public static final long[] southBorderMask = BitMaskCreationHelper.getSouthBorderMask();
+    public static final long[] NORTH_BORDER_MASK = BitMaskCreationHelper.getNorthBorderMaskArray();
+    public static final long[] SOUTH_BORDER_MASK = BitMaskCreationHelper.getSouthBorderMaskArray();
 
     public static final long[] northDoubleBorderMask = BitMaskCreationHelper.getNorthDoubleBorderMask();
 
     public static final long[] southDoubleBorderMask = BitMaskCreationHelper.getSouthDoubleBorderMask();
 
-    public static final long[] bitMapMask = BitMaskCreationHelper.getBitMapMask();
+
+    public static final long[] CAPTURE_SOUTH_WEST_MASK = BitMaskCreationHelper.getCaptureSouthWestMaskArray();
+    public static final long[] CAPTURE_SOUTH_EAST_MASK = BitMaskCreationHelper.getCaptureSouthEastMaskArray();
+    public static final long[] CAPTURE_NORTH_EAST_MASK = BitMaskCreationHelper.getCaptureNorthEastMask();
+    public static final long[] CAPTURE_NORTH_WEST_MASK = BitMaskCreationHelper.getCaptureNorthWestMask();
+
+    public static final long[] BIT_MAP_MASK = BitMaskCreationHelper.getBitMapMask();
 
 
     public static long[] bitShiftL(long[] board, int shiftBy) {
         long[] shifted = new long[]{board[0] << shiftBy | board[1] >>> 64 - shiftBy, board[1] << shiftBy};
-        return and(shifted, bitMapMask);
+        return and(shifted, BIT_MAP_MASK);
     }
 
     public static long[] bitShiftR(long[] board, int shiftBy) {
         long[] shifted = new long[]{board[0] >>> shiftBy, board[1] >>> shiftBy | board[0] << 64 - shiftBy};
-        return and(shifted, bitMapMask);
+        return and(shifted, BIT_MAP_MASK);
     }
 
     public static long[] or(long[] board1, long[] board2) {
@@ -63,7 +69,7 @@ public class BasicBitOps {
     }
 
     public static long[] shiftEast(long[] board, int steps) {
-        long[] masked = and(board, rightBorderMask);
+        long[] masked = and(board, EAST_BORDER_MASK);
         masked = bitShiftR(masked, 1);
         if (steps == 1) {
             return masked;
@@ -73,7 +79,7 @@ public class BasicBitOps {
     }
 
     public static long[] shiftWest(long[] board, int steps) {
-        long[] masked = and(board, leftBorderMask);
+        long[] masked = and(board, WEST_BORDER_MASK);
         masked = bitShiftL(masked, 1);
         if (steps == 1) {
             return masked;
