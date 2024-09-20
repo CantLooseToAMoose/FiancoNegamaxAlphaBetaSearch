@@ -1,4 +1,4 @@
-package FiancoEngine;
+package FiancoGameEngine;
 
 import javax.swing.*;
 import java.awt.*;

@@ -1,7 +1,7 @@
 package AI;
 
-import FiancoEngine.Fianco;
-import FiancoEngine.MoveCommand;
+import FiancoGameEngine.Fianco;
+import FiancoGameEngine.MoveCommand;
 
 import java.util.ArrayList;
 import java.util.Random;

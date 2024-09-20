@@ -2,8 +2,8 @@
 
 ## How to use the Engine
 
-To start the Game Engine simply run the FiancoEngine.GameEngine Class. If you want to connect with an AIClient run the ServerStructure.GameClient
-Class. When you start the FiancoEngine.GameEngine Class the game is not already running so
+To start the Game Engine simply run the FiancoGameEngine.GameEngine Class. If you want to connect with an AIClient run the ServerStructure.GameClient
+Class. When you start the FiancoGameEngine.GameEngine Class the game is not already running so
 you will have to press the Start/Restart Button. When you do this the game waits for Moves to be made by either a human
 Player through the GUI or through a connected Client.
 You can also undo moves using the Undo Button, but the Game pauses when you do it and you will have to hit the Continue

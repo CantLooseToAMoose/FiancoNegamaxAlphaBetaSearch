@@ -1,4 +1,4 @@
-package FiancoEngine;
+package FiancoGameEngine;
 
 // Interface for log listeners
 public interface LogListener {

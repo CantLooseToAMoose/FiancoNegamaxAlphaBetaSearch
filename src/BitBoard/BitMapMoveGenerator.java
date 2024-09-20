@@ -1,4 +1,4 @@
-package AI;
+package BitBoard;
 
 import java.util.LinkedList;
 import java.util.Queue;

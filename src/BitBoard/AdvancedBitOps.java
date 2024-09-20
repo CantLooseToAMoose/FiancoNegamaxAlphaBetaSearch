@@ -1,4 +1,4 @@
-package AI;
+package BitBoard;
 
 public class AdvancedBitOps {
         public static long[] possibleWestMovePieces(long[] board1, long[] board2) {

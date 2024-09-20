@@ -1,4 +1,4 @@
-package AI;
+package BitBoard;
 
 public class BasicBitOps {
 

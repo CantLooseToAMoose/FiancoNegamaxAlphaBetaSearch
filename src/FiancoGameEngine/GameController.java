@@ -1,8 +1,5 @@
-package FiancoEngine;
+package FiancoGameEngine;
 
-import FiancoEngine.BoardGUI;
-import FiancoEngine.Fianco;
-import FiancoEngine.Logger;
 import ServerStructure.GameServer;
 import ServerStructure.MessageLib;
 

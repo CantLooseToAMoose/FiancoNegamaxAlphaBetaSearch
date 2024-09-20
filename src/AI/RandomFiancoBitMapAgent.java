@@ -1,9 +1,8 @@
 package AI;
 
-import FiancoEngine.Fianco;
-import FiancoEngine.MoveCommand;
+import BitBoard.BitMapMoveGenerator;
+import BitBoard.BitmapFianco;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Random;
 

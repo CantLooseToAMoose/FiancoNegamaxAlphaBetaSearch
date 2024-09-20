@@ -1,6 +1,6 @@
-package AI;
+package BitBoard;
 
-import FiancoEngine.Fianco;
+import FiancoGameEngine.Fianco;
 
 import java.util.Arrays;
 

@@ -1,10 +1,9 @@
 package ServerStructure;
 
-import AI.BitmapFianco;
+import BitBoard.BitmapFianco;
 import AI.IAgent;
-import AI.RandomFiancoAgent;
 import AI.RandomFiancoBitMapAgent;
-import FiancoEngine.Fianco;
+import FiancoGameEngine.Fianco;
 
 import java.io.*;
 import java.net.*;

@@ -1,8 +1,5 @@
-package FiancoEngine;
+package FiancoGameEngine;
 
-import FiancoEngine.BoardGUI;
-import FiancoEngine.Fianco;
-import FiancoEngine.GameController;
 import ServerStructure.GameServer;
 
 import javax.swing.*;
