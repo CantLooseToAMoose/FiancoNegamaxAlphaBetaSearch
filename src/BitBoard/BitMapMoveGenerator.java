@@ -169,17 +169,17 @@ public class BitMapMoveGenerator {
         }
     }
 
-    public static LinkedList<long[]> populateQueueWithAllPossibleMoves(long[] board, boolean isPlayerOne) {
+    public static LinkedList<long[]> createQueueWithAllPossibleMoves(long[] board, boolean isPlayerOne) {
         LinkedList<long[]> moveQueue = new LinkedList<long[]>();
         populateQueueWithCaptureMoves(board, moveQueue, isPlayerOne);
-        if (moveQueue.size() == 0) {
+        if (moveQueue.isEmpty()) {
             populateQueueWithQuietMoves(board, moveQueue, isPlayerOne);
         }
         return moveQueue;
 
     }
 
-    public static long[] updateBoardStateFromMove(long[] board, long[] move, boolean isPlayerOne) {
+    public static long[] createNewBoardStateFromMove(long[] board, long[] move, boolean isPlayerOne) {
         long[] updatedPlayerBoard;
         long[] updatedOpponentBoard;
         if (isPlayerOne) {

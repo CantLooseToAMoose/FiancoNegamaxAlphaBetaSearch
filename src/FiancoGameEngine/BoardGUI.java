@@ -178,7 +178,7 @@ public class BoardGUI extends JFrame implements LogListener {
         redrawBoard(controller.getBoardState());  // Redraw the updated board
     }
 
-    public synchronized void redrawBoard(int[][] boardState) {
+    public synchronized void  redrawBoard(int[][] boardState) {
         // Remove the old board panel and add the new one
         getContentPane().remove(boardPanel);
         boardPanel = createBoardPanel(boardState);

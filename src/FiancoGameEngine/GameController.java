@@ -3,6 +3,8 @@ package FiancoGameEngine;
 import ServerStructure.GameServer;
 import ServerStructure.MessageLib;
 
+import javax.swing.*;
+
 public class GameController {
     private Fianco fianco;
     private BoardGUI gui;
@@ -85,12 +87,12 @@ public class GameController {
     }
 
     private synchronized void moveMisc() {
-        switchActivePlayer();
-        gui.redrawBoard(getBoardState());
+        SwingUtilities.invokeLater(() -> gui.redrawBoard(getBoardState()));
         if (isGameOver()) {
             gameIsRunning = false;
             Logger.getInstance().log("Game over. Player " + activePlayer + " won the game! \n The game lasted: " + fianco.getMoveCommands().size() + " moves.");
         }
+        switchActivePlayer();
     }
 
     public void undo() {

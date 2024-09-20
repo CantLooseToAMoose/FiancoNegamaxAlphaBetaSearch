@@ -1,0 +1,68 @@
+package search;
+
+import BitBoard.BasicBitOps;
+
+public class Evaluate {
+    public static int calculatePieceDifference(long[] board, boolean isPlayerOne) {
+        int[] piecesOnBoard = BasicBitOps.getNumberOfOnesOnBoard(board);
+        if (isPlayerOne) {
+            return piecesOnBoard[0] - piecesOnBoard[1];
+        } else {
+            return piecesOnBoard[1] - piecesOnBoard[0];
+        }
+    }
+
+    public static int calculateWeightedPieceDifference(long[] board, boolean isPlayerOne) {
+        long[] player1Board = new long[]{board[0], board[1]};
+        long[] player2Board = new long[]{board[2], board[3]};
+        int score1 = 0;
+        int score2 = 0;
+        for (int i = 0; i < 9; i++) {
+            score1 += BasicBitOps.getNumberOfOnesInPlayerBoard(BasicBitOps.and(player1Board, BasicBitOps.ROW_MASK_SET[i])) * (i + 1);
+            score2 += BasicBitOps.getNumberOfOnesInPlayerBoard(BasicBitOps.and(player2Board, BasicBitOps.ROW_MASK_SET[i])) * (9 - (i + 1));
+        }
+        return isPlayerOne ? score1 - score2 : score2 - score1;
+
+    }
+
+    public static boolean checkForWin(long[] board, boolean isPlayerOne) {
+        int[] piecesOnBoard = BasicBitOps.getNumberOfOnesOnBoard(board);
+        if (isPlayerOne) {
+            if (piecesOnBoard[1] == 0) {
+                return true;
+            }
+            long[] lastRow = BasicBitOps.and(new long[]{board[0], board[1]}, BasicBitOps.ROW_MASK_SET[8]);
+            if (BasicBitOps.getNumberOfOnesInPlayerBoard(lastRow) != 0) {
+                return true;
+            }
+        } else {
+            if (piecesOnBoard[0] == 0) {
+                return true;
+            }
+            long[] firstRow = BasicBitOps.and(new long[]{board[2], board[3]}, BasicBitOps.ROW_MASK_SET[0]);
+            if (BasicBitOps.getNumberOfOnesInPlayerBoard(firstRow) != 0) {
+                return true;
+            }
+        }
+        return false;
+
+    }
+
+    public static int evaluateWin(long[] board, boolean isPlayerOne) {
+        if (checkForWin(board, isPlayerOne)) {
+            return 1;
+        } else if (checkForWin(board, !isPlayerOne)) {
+            return -1;
+        }
+        return 0;
+    }
+
+    public static int randomValue(int min, int max) {
+        return (int) (Math.random() * (max - min + 1)) + min;
+    }
+
+
+    public static int combinedEvaluate(long[] board, boolean isPlayerOne) {
+        return calculateWeightedPieceDifference(board, isPlayerOne) + evaluateWin(board, isPlayerOne) * 300 + randomValue(-5, 5);
+    }
+}

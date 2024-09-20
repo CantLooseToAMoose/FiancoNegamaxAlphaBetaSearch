@@ -31,8 +31,12 @@ public class GameServer {
 
     public void askForClientMoves() {
         while (true) {
-//            System.out.println("Ask for AI");
             controller.askForAiMoves();
+            try {
+                Thread.sleep(50); // Small delay to yield CPU time
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -61,7 +65,7 @@ public class GameServer {
     }
 
 
-    public synchronized String getMoveFromPlayer(Socket playerSocket, String playerId) {
+    public String getMoveFromPlayer(Socket playerSocket, String playerId) {
 //        System.out.println("getMoveFromPlayer called for: " + playerId);
         if (playerSocket != null && !playerSocket.isClosed()) {
             try {
@@ -72,9 +76,9 @@ public class GameServer {
                 out.flush();
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(playerSocket.getInputStream()));
-//                System.out.println("Waiting for move from Player: " + playerId);
+                System.out.println("Waiting for move from Player: " + playerId);
                 String answer = in.readLine();
-//                System.out.println("Received " + answer + " from Player: " + playerId);
+                System.out.println("Received " + answer + " from Player: " + playerId);
                 return answer; // Wait for the client's move
             } catch (IOException e) {
                 e.printStackTrace();

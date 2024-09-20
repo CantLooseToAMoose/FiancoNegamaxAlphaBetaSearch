@@ -2,6 +2,7 @@ package BitBoard;
 
 public class BasicBitOps {
 
+    public static final long[] BIT_MAP_MASK = BitMaskCreationHelper.getBitMapMask();
 
     public static final long[] EAST_BORDER_MASK = BitMaskCreationHelper.getEastBorderMask();
     public static final long[] WEST_BORDER_MASK = BitMaskCreationHelper.getWestBorderMask();
@@ -15,13 +16,23 @@ public class BasicBitOps {
 
     public static final long[] southDoubleBorderMask = BitMaskCreationHelper.getSouthDoubleBorderMask();
 
+    public static final long[] ROW_ONE_MASK = BasicBitOps.inv(NORTH_BORDER_MASK);
+    public static final long[] ROW_TWO_MASK = shiftSouth(BasicBitOps.inv(NORTH_BORDER_MASK), 1);
+    public static final long[] ROW_THREE_MASK = shiftSouth(BasicBitOps.inv(NORTH_BORDER_MASK), 2);
+    public static final long[] ROW_FOUR_MASK = shiftSouth(BasicBitOps.inv(NORTH_BORDER_MASK), 3);
+    public static final long[] ROW_FIVE_MASK = shiftSouth(BasicBitOps.inv(NORTH_BORDER_MASK), 4);
+    public static final long[] ROW_SIX_MASK = shiftSouth(BasicBitOps.inv(NORTH_BORDER_MASK), 5);
+    public static final long[] ROW_SEVEN_MASK = shiftSouth(BasicBitOps.inv(NORTH_BORDER_MASK), 6);
+    public static final long[] ROW_EIGHT_MASK = shiftSouth(BasicBitOps.inv(NORTH_BORDER_MASK), 7);
+    public static final long[] ROW_NINE_MASK = shiftSouth(BasicBitOps.inv(NORTH_BORDER_MASK), 8);
+
+    public static final long[][] ROW_MASK_SET = new long[][]{ROW_ONE_MASK, ROW_TWO_MASK, ROW_THREE_MASK, ROW_FOUR_MASK, ROW_FIVE_MASK, ROW_SIX_MASK, ROW_SEVEN_MASK, ROW_EIGHT_MASK, ROW_NINE_MASK};
+
 
     public static final long[] CAPTURE_SOUTH_WEST_MASK = BitMaskCreationHelper.getCaptureSouthWestMaskArray();
     public static final long[] CAPTURE_SOUTH_EAST_MASK = BitMaskCreationHelper.getCaptureSouthEastMaskArray();
     public static final long[] CAPTURE_NORTH_EAST_MASK = BitMaskCreationHelper.getCaptureNorthEastMask();
     public static final long[] CAPTURE_NORTH_WEST_MASK = BitMaskCreationHelper.getCaptureNorthWestMask();
-
-    public static final long[] BIT_MAP_MASK = BitMaskCreationHelper.getBitMapMask();
 
 
     public static long[] bitShiftL(long[] board, int shiftBy) {
@@ -130,6 +141,14 @@ public class BasicBitOps {
         } else {
             return shiftSouthEast(shifted, steps - 1);
         }
+    }
+
+    public static int getNumberOfOnesInPlayerBoard(long[] board) {
+        return Long.bitCount(board[0]) + Long.bitCount(board[1]);
+    }
+
+    public static int[] getNumberOfOnesOnBoard(long[] board) {
+        return new int[]{Long.bitCount(board[0]) + Long.bitCount(board[1]), Long.bitCount(board[2]) + Long.bitCount(board[3])};
     }
 
 }
