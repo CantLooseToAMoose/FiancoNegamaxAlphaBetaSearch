@@ -62,7 +62,7 @@ public class GameServer {
 
 
     public synchronized String getMoveFromPlayer(Socket playerSocket, String playerId) {
-        System.out.println("getMoveFromPlayer called for: " + playerId);
+//        System.out.println("getMoveFromPlayer called for: " + playerId);
         if (playerSocket != null && !playerSocket.isClosed()) {
             try {
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter(playerSocket.getOutputStream()));

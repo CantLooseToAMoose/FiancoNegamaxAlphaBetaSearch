@@ -89,6 +89,7 @@ public class GameController {
         gui.redrawBoard(getBoardState());
         if (isGameOver()) {
             gameIsRunning = false;
+            Logger.getInstance().log("Game over. Player " + activePlayer + " won the game! \n The game lasted: " + fianco.getMoveCommands().size() + " moves.");
         }
     }
 

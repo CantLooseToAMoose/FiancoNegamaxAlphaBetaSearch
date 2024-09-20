@@ -16,6 +16,7 @@ public class Fianco {
     // 9x9 board state: 0 = empty, 1 = white piece, 2 = black piece
     private int[][] boardState = new int[BOARD_SIZE][BOARD_SIZE];
 
+
     private ArrayList<MoveCommand> moveCommands;
 
 
@@ -102,5 +103,8 @@ public class Fianco {
         return positions;
     }
 
+    public ArrayList<MoveCommand> getMoveCommands() {
+        return moveCommands;
+    }
 
 }

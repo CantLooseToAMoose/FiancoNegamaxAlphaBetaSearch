@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MoveCommand {
+    private static final char[] COLUMN_NAMES = new char[]{'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'};
     private int from_row;
     private int from_col;
     private int to_row;
@@ -316,7 +317,7 @@ public class MoveCommand {
 
     @Override
     public String toString() {
-        return "Player " + player + ": (" + from_row + "," + from_col + ")->(" + to_row + "," + to_col + ")";
+        return "Player " + player + ": (" + COLUMN_NAMES[from_col]  + (from_row + 1) + ")->(" + COLUMN_NAMES[to_col] + (to_row + 1) + ")";
     }
 
 }
