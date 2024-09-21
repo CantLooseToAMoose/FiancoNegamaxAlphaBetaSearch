@@ -10,14 +10,18 @@ public class AlphaBetaSearch {
     public static int AlphaBeta(long[] board, boolean isPlayerOne, boolean isPlayerOneTurn, int depth, int alpha, int beta) {
         nodes++;
         LinkedList<long[]> succesorMoves = BitMapMoveGenerator.createQueueWithAllPossibleMoves(board, isPlayerOneTurn);
+        int win = Evaluate.evaluateWin(board, isPlayerOneTurn);
+        if (win != 0) {
+            return (300 + depth) * win;
+        }
         if (succesorMoves.isEmpty() || depth == 0) {
-            return Evaluate.combinedEvaluate(board, isPlayerOne);
+            return Evaluate.combinedEvaluate(board, isPlayerOneTurn);
         }
         int score = -Integer.MAX_VALUE;
         while (!succesorMoves.isEmpty()) {
             long[] move = succesorMoves.remove();
             long[] newBoard = BitMapMoveGenerator.createNewBoardStateFromMove(board, move, isPlayerOneTurn);
-            int value = -AlphaBeta(newBoard, isPlayerOne, !isPlayerOneTurn, depth - 1, -beta, alpha);
+            int value = -AlphaBeta(newBoard, isPlayerOne, !isPlayerOneTurn, depth - 1, -beta, -alpha);
 
             if (value > score) {
                 score = value;
@@ -32,6 +36,7 @@ public class AlphaBetaSearch {
 
     public static long[] GetBestAlphaBetaMove(long[] board, boolean isPlayerOne, boolean isPlayerOneTurn, int depth, int alpha, int beta) {
 //      TODO: Can you Parallelize this?
+        System.out.println("Evaluate this Position: " + Evaluate.combinedEvaluate(board, isPlayerOne));
         long startTime = System.nanoTime();
         nodes = 0;
         int bestScore = -Integer.MAX_VALUE;
@@ -40,7 +45,7 @@ public class AlphaBetaSearch {
         while (!succesorMoves.isEmpty()) {
             long[] move = succesorMoves.remove();
             long[] newBoard = BitMapMoveGenerator.createNewBoardStateFromMove(board, move, isPlayerOneTurn);
-            int value = -AlphaBeta(newBoard, isPlayerOne, !isPlayerOneTurn, depth - 1, -beta, alpha);
+            int value = -AlphaBeta(newBoard, isPlayerOne, !isPlayerOneTurn, depth - 1, -beta, -alpha);
             if (value > bestScore) {
                 bestScore = value;
                 bestBoard = newBoard;

@@ -2,6 +2,8 @@ package BitBoard;
 
 public class BitMaskCreationHelper {
 
+    //Masks are 1 for pieces that i dont want to consider with the mask
+
     public static final int[][] rightBorderMask = new int[][]{
             {0, 0, 0, 0, 0, 0, 0, 0, 1},
             {0, 0, 0, 0, 0, 0, 0, 0, 1},
@@ -128,7 +130,6 @@ public class BitMaskCreationHelper {
             {1, 1, 1, 1, 1, 1, 1, 1, 1},
             {1, 1, 1, 1, 1, 1, 1, 1, 1}};
 
-    public static final int[][] BitMapMask = new int[9][9];
 
     public static long[] getFreeTilesBitMask(long[] board1, long[] board2) {
         long[] combined = BasicBitOps.or(board1, board2);
@@ -139,7 +140,20 @@ public class BitMaskCreationHelper {
     public static long[] turn2DIntArrayBitMaskToLongArray(int[][] board) {
         BitmapFianco bitmapFianco = new BitmapFianco();
         bitmapFianco.populateBoardBitmapsFrom2DIntArray(board);
-        return BasicBitOps.inv(bitmapFianco.getPlayer1Board());
+        return BasicBitOps.and(BasicBitOps.BIT_MAP_MASK, BasicBitOps.inv(bitmapFianco.getPlayer1Board()));
+    }
+
+    public static long[] createBitMapMaskLongArray() {
+        int[][] board = new int[9][9];  // Declare a 2D array
+
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                board[i][j] = 1;
+            }
+        }
+        BitmapFianco bitmapFianco = new BitmapFianco();
+        bitmapFianco.populateBoardBitmapsFrom2DIntArray(board);
+        return bitmapFianco.getPlayer1Board();
     }
 
     public static long[] getEastBorderMask() {
@@ -174,9 +188,6 @@ public class BitMaskCreationHelper {
         return turn2DIntArrayBitMaskToLongArray(northBorderMaskArray);
     }
 
-    public static long[] getBitMapMask() {
-        return turn2DIntArrayBitMaskToLongArray(BitMapMask);
-    }
 
     public static long[] getCaptureSouthWestMaskArray() {
         return turn2DIntArrayBitMaskToLongArray(captureSouthWestMaskArray);

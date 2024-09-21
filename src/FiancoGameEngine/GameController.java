@@ -97,7 +97,8 @@ public class GameController {
 
     public void undo() {
 
-        if (fianco.Undo()) {// Only switch players when successfully undoing a move
+        if (fianco.Undo()) {//
+            gui.redrawBoard(getBoardState());// Only switch players when successfully undoing a move
             switchActivePlayer();
         }
         gameIsRunning = false;

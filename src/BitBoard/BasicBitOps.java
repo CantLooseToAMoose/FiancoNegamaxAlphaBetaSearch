@@ -2,7 +2,7 @@ package BitBoard;
 
 public class BasicBitOps {
 
-    public static final long[] BIT_MAP_MASK = BitMaskCreationHelper.getBitMapMask();
+    public static final long[] BIT_MAP_MASK = BitMaskCreationHelper.createBitMapMaskLongArray();
 
     public static final long[] EAST_BORDER_MASK = BitMaskCreationHelper.getEastBorderMask();
     public static final long[] WEST_BORDER_MASK = BitMaskCreationHelper.getWestBorderMask();
@@ -54,7 +54,8 @@ public class BasicBitOps {
     }
 
     public static long[] inv(long[] board) {
-        return new long[]{~board[0], ~board[1]};
+        long[] inv = new long[]{~board[0], ~board[1]};
+        return BasicBitOps.and(inv, BIT_MAP_MASK);
     }
 
     public static long[] XOR(long[] board1, long[] board2) {

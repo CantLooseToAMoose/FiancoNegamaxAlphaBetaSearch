@@ -25,7 +25,7 @@ public class SimpleAlphaBetaSearchAgent implements IAgent {
         long[] player2Board = fianco.getPlayer2Board();
         long[] board = new long[]{player1Board[0], player1Board[1], player2Board[0], player2Board[1]};
 //        System.out.println(fianco);
-        long[] newBoard=AlphaBetaSearch.GetBestAlphaBetaMove(board, player == 1, player == 1, 10, -Integer.MAX_VALUE, Integer.MAX_VALUE);
+        long[] newBoard=AlphaBetaSearch.GetBestAlphaBetaMove(board, player == 1, player == 1, 9, -Integer.MAX_VALUE, Integer.MAX_VALUE);
 //        System.out.println("Board after generated Move:");
 //        BitmapFianco.ShowBitBoard(newBoard);
 
