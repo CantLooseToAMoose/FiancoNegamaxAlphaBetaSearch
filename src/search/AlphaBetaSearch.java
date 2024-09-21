@@ -32,6 +32,7 @@ public class AlphaBetaSearch {
 
     public static long[] GetBestAlphaBetaMove(long[] board, boolean isPlayerOne, boolean isPlayerOneTurn, int depth, int alpha, int beta) {
 //      TODO: Can you Parallelize this?
+        long startTime = System.nanoTime();
         nodes = 0;
         int bestScore = -Integer.MAX_VALUE;
         long[] bestBoard = null;
@@ -45,8 +46,11 @@ public class AlphaBetaSearch {
                 bestBoard = newBoard;
             }
         }
+        long endTime = System.nanoTime();
         System.out.println("Nodes: " + nodes);
-        System.out.println(bestScore);
+        System.out.println("Time: " + (endTime - startTime) / 1_000_000_000.0 + "s");
+        System.out.println("Nodes per second:" + nodes / ((endTime - startTime) / 1_000_000_000.0));
+        System.out.println("Score:" + bestScore);
         return bestBoard;
     }
 }
