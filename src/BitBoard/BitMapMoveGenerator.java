@@ -41,6 +41,30 @@ public class BitMapMoveGenerator {
         populateQueueWithCapturePiecesBoard(capturePiecesWest, playerBoard, opponentBoard, isPlayerOne, true, moveQueue);
     }
 
+    private static void fasterPopulateQueueWithCaptureMoves(long[] board, Queue<long[]> moveQueue, boolean isPlayerOne) {
+        long[] playerBoard;
+        long[] opponentBoard;
+        if (isPlayerOne) {
+            playerBoard = new long[]{board[0], board[1]};
+            opponentBoard = new long[]{board[2], board[3]};
+        } else {
+            playerBoard = new long[]{board[2], board[3]};
+            opponentBoard = new long[]{board[0], board[1]};
+        }
+        long[] capturePiecesWest;
+        long[] capturePiecesEast;
+        long[] freeTileBitMask = BitMaskCreationHelper.getFreeTilesBitMask(playerBoard, opponentBoard);
+        if (isPlayerOne) {
+            capturePiecesEast = AdvancedBitOps.fasterPossibleSouthEastMovePieces(playerBoard, opponentBoard, freeTileBitMask);
+            capturePiecesWest = AdvancedBitOps.fasterPossibleSouthWestMovePieces(playerBoard, opponentBoard, freeTileBitMask);
+        } else {
+            capturePiecesEast = AdvancedBitOps.fasterPossibleNorthEastMovePieces(playerBoard, opponentBoard, freeTileBitMask);
+            capturePiecesWest = AdvancedBitOps.fasterPossibleNorthWestMovePieces(playerBoard, opponentBoard, freeTileBitMask);
+        }
+        populateQueueWithCapturePiecesBoard(capturePiecesEast, playerBoard, opponentBoard, isPlayerOne, false, moveQueue);
+        populateQueueWithCapturePiecesBoard(capturePiecesWest, playerBoard, opponentBoard, isPlayerOne, true, moveQueue);
+    }
+
     /**
      * Helping Method for populating the Queue with the correct new BoardStates after generating all possible Pieces for capturing in a specific Direction
      *
@@ -116,6 +140,32 @@ public class BitMapMoveGenerator {
 
     }
 
+    private static void fasterPopulateQueueWithQuietMoves(long[] board, Queue<long[]> moveQueue, boolean isPlayerOne) {
+        long[] playerBoard;
+        long[] opponentBoard;
+        if (isPlayerOne) {
+            playerBoard = new long[]{board[0], board[1]};
+            opponentBoard = new long[]{board[2], board[3]};
+        } else {
+            playerBoard = new long[]{board[2], board[3]};
+            opponentBoard = new long[]{board[0], board[1]};
+        }
+        long[] freeTileBitMask = BitMaskCreationHelper.getFreeTilesBitMask(playerBoard, opponentBoard);
+        long[] canMoveEast = AdvancedBitOps.fasterPossibleEastMovePieces(playerBoard, freeTileBitMask);
+        long[] canMoveWest = AdvancedBitOps.fasterPossibleWestMovePieces(playerBoard, freeTileBitMask);
+        long[] canMoveForward;
+
+        if (isPlayerOne) {
+            canMoveForward = AdvancedBitOps.fasterPossibleEastMovePieces(playerBoard, freeTileBitMask);
+        } else {
+            canMoveForward = AdvancedBitOps.fasterPossibleNorthMovePieces(playerBoard, freeTileBitMask);
+        }
+        populateQueueWithForwardMovesBoard(canMoveForward, playerBoard, opponentBoard, isPlayerOne, moveQueue);
+        populateQueueWithSideMovesBoard(canMoveEast, playerBoard, opponentBoard, isPlayerOne, false, moveQueue);
+        populateQueueWithSideMovesBoard(canMoveWest, playerBoard, opponentBoard, isPlayerOne, true, moveQueue);
+
+    }
+
     private static void populateQueueWithForwardMovesBoard(long[] movePieces, long[] playerBoard, long[] opponentBoard, boolean isPlayerOne, Queue<long[]> moves) {
         for (int i = 0; i < movePieces.length; i++) {
             long temp = movePieces[i];
@@ -136,7 +186,6 @@ public class BitMapMoveGenerator {
                 } else {
                     playerLandingSpot = BasicBitOps.shiftNorth(isolatedPieceOnBoard, 1);
                 }
-                long[] updatedPlayerBoard = playerBoard;
                 moves.add(new long[]{isolatedPieceOnBoard[0], isolatedPieceOnBoard[1], playerLandingSpot[0], playerLandingSpot[1]});
                 temp &= (temp - 1);                 // Clear the lowest set bit
             }
@@ -176,7 +225,15 @@ public class BitMapMoveGenerator {
             populateQueueWithQuietMoves(board, moveQueue, isPlayerOne);
         }
         return moveQueue;
+    }
 
+    public static LinkedList<long[]> fasterCreateQueueWithAllPossibleMoves(long[] board, boolean isPlayerOne) {
+        LinkedList<long[]> moveQueue = new LinkedList<long[]>();
+        fasterPopulateQueueWithCaptureMoves(board, moveQueue, isPlayerOne);
+        if (moveQueue.isEmpty()) {
+            fasterPopulateQueueWithQuietMoves(board, moveQueue, isPlayerOne);
+        }
+        return moveQueue;
     }
 
     public static long[] createNewBoardStateFromMove(long[] board, long[] move, boolean isPlayerOne) {

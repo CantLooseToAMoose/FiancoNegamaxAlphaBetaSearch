@@ -133,7 +133,8 @@ public class BitMaskCreationHelper {
 
     public static long[] getFreeTilesBitMask(long[] board1, long[] board2) {
         long[] combined = BasicBitOps.or(board1, board2);
-        return BasicBitOps.inv(combined);
+        BasicBitOps.invInPlace(combined);
+        return combined;
     }
 
 

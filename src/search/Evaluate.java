@@ -5,6 +5,9 @@ import BitBoard.BasicBitOps;
 import BitBoard.BitmapFianco;
 
 public class Evaluate {
+
+    //    TODO: expand on rating the pieces by the number of pieces they can be blocked by. And by the number of pieces they are blocking.
+//    Idea: Try to get a board with numbers that represent the number of pieces that can reach this position in n-rounds. Then compare to the places that a piece can reach in n rounds.
     public static int calculatePieceDifference(long[] board, boolean isPlayerOne) {
         int[] piecesOnBoard = BasicBitOps.getNumberOfOnesOnBoard(board);
         if (isPlayerOne) {

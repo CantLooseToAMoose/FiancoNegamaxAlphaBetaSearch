@@ -5,11 +5,12 @@ import BitBoard.BitMapMoveGenerator;
 import java.util.LinkedList;
 
 public class AlphaBetaSearch {
+//    Todo: Check for repetetive Movements
     public static int nodes = 0;
 
     public static int AlphaBeta(long[] board, boolean isPlayerOne, boolean isPlayerOneTurn, int depth, int alpha, int beta) {
         nodes++;
-        LinkedList<long[]> succesorMoves = BitMapMoveGenerator.createQueueWithAllPossibleMoves(board, isPlayerOneTurn);
+        LinkedList<long[]> succesorMoves = BitMapMoveGenerator.fasterCreateQueueWithAllPossibleMoves(board, isPlayerOneTurn);
         int win = Evaluate.evaluateWin(board, isPlayerOneTurn);
         if (win != 0) {
             return (300 + depth) * win;
@@ -41,7 +42,7 @@ public class AlphaBetaSearch {
         nodes = 0;
         int bestScore = -Integer.MAX_VALUE;
         long[] bestBoard = null;
-        LinkedList<long[]> succesorMoves = BitMapMoveGenerator.createQueueWithAllPossibleMoves(board, isPlayerOneTurn);
+        LinkedList<long[]> succesorMoves = BitMapMoveGenerator.fasterCreateQueueWithAllPossibleMoves(board, isPlayerOneTurn);
         while (!succesorMoves.isEmpty()) {
             long[] move = succesorMoves.remove();
             long[] newBoard = BitMapMoveGenerator.createNewBoardStateFromMove(board, move, isPlayerOneTurn);

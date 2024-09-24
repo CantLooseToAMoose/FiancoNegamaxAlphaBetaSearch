@@ -140,11 +140,6 @@ public class BitmapFianco {
         return ret;
     }
 
-    private long[] allPossibleForwardMovements(long[] bitmap, boolean isPlayerOne) {
-
-        return null;
-    }
-
     public static void ShowBitBoard(long[] board) {
         BitmapFianco bitmapFianco = new BitmapFianco();
         if (board.length == 2) {
