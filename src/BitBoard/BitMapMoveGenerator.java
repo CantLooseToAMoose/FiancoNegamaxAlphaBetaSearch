@@ -150,16 +150,48 @@ public class BitMapMoveGenerator {
             playerBoard = new long[]{board[2], board[3]};
             opponentBoard = new long[]{board[0], board[1]};
         }
+
+
+//        System.out.println("Board to generate Moves from");
+//        BitmapFianco.ShowBitBoard(board);
+
+
         long[] freeTileBitMask = BitMaskCreationHelper.getFreeTilesBitMask(playerBoard, opponentBoard);
+//
+//
+//        System.out.println("Free Tiles BitMask");
+//        BitmapFianco.ShowBitBoard(freeTileBitMask);
+
+
         long[] canMoveEast = AdvancedBitOps.fasterPossibleEastMovePieces(playerBoard, freeTileBitMask);
+
+
+
+//        System.out.println("Can Move East:");
+//        BitmapFianco.ShowBitBoard(canMoveEast);
+
+
+
         long[] canMoveWest = AdvancedBitOps.fasterPossibleWestMovePieces(playerBoard, freeTileBitMask);
+
+
+
+//        System.out.println("Can Move West:");
+//        BitmapFianco.ShowBitBoard(canMoveEast);
+
+
         long[] canMoveForward;
 
         if (isPlayerOne) {
-            canMoveForward = AdvancedBitOps.fasterPossibleEastMovePieces(playerBoard, freeTileBitMask);
+            canMoveForward = AdvancedBitOps.fasterPossibleSouthMovePieces(playerBoard, freeTileBitMask);
         } else {
             canMoveForward = AdvancedBitOps.fasterPossibleNorthMovePieces(playerBoard, freeTileBitMask);
         }
+//        SHOW SOME STUFF
+//        System.out.println("Can Move Forward:");
+//        BitmapFianco.ShowBitBoard(canMoveForward);
+
+
         populateQueueWithForwardMovesBoard(canMoveForward, playerBoard, opponentBoard, isPlayerOne, moveQueue);
         populateQueueWithSideMovesBoard(canMoveEast, playerBoard, opponentBoard, isPlayerOne, false, moveQueue);
         populateQueueWithSideMovesBoard(canMoveWest, playerBoard, opponentBoard, isPlayerOne, true, moveQueue);
