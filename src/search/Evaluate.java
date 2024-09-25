@@ -26,11 +26,11 @@ public class Evaluate {
 //            System.out.println("i:" + i);
 //            System.out.println("player1Board:");
 //            BitmapFianco.ShowBitBoard(player1Board);
-            score1 += BasicBitOps.getNumberOfOnesInPlayerBoard(BasicBitOps.and(player1Board, BasicBitOps.ROW_MASK_SET[i])) * (i + 1) * (i + 1);
+            score1 += BasicBitOps.getNumberOfOnesInPlayerBoard(BasicBitOps.and(player1Board, BasicBitOps.ROW_MASK_SET[i])) * (i + 1);
 //            System.out.println("score1: " + score1);
 //            System.out.println("player2Board:");
 //            BitmapFianco.ShowBitBoard(player2Board);
-            score2 += BasicBitOps.getNumberOfOnesInPlayerBoard(BasicBitOps.and(player2Board, BasicBitOps.ROW_MASK_SET[i])) * (9 - i) * (9 - i);
+            score2 += BasicBitOps.getNumberOfOnesInPlayerBoard(BasicBitOps.and(player2Board, BasicBitOps.ROW_MASK_SET[i])) * (9 - i);
 //            System.out.println(score2);
         }
         return isPlayerOne ? score1 - score2 : score2 - score1;
@@ -75,6 +75,6 @@ public class Evaluate {
 
 
     public static int combinedEvaluate(long[] board, boolean isPlayerOne) {
-        return calculateWeightedPieceDifference(board, isPlayerOne) + randomValue(-1, 1);
+        return calculateWeightedPieceDifference(board, isPlayerOne);
     }
 }
