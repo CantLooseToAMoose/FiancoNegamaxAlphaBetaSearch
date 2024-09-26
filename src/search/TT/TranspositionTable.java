@@ -1,4 +1,4 @@
-package search;
+package search.TT;
 
 public class TranspositionTable {
 
@@ -13,6 +13,9 @@ public class TranspositionTable {
     // Store a position in the transposition table
     public void store(long hash, int depth, int score, byte type, short bestMove) {
         int index = (int) (hash % size); // Reduce hash to fit in array
+        if (index < 0) {
+            index += size; // Fix for negative indices
+        }
         TranspositionTableEntry entry = new TranspositionTableEntry(hash, depth, score, type, bestMove);
         table[index] = entry;
     }
@@ -20,18 +23,17 @@ public class TranspositionTable {
     // Retrieve a position from the transposition table
     public TranspositionTableEntry retrieve(long hash) {
         int index = (int) (hash % size);
+        if (index < 0) {
+            index += size; // Fix for negative indices
+        }
         TranspositionTableEntry entry = table[index];
 
         // Check if the entry's hash matches the current board's hash
-        if (entry != null && entry.hash == hash) {
-            return entry;
+        if (entry == null) {
+            return null;
         }
-        return null; // No valid entry
+        return entry;
     }
 
-    // Check if the table contains the given position
-    public boolean contains(long hash) {
-        return retrieve(hash) != null;
-    }
 }
 

@@ -11,11 +11,13 @@ import java.util.Random;
 public class SimpleAlphaBetaSearchAgent implements IAgent {
     private BitmapFianco fianco;
     private final int player;
+    private AlphaBetaSearch alphaBetaSearch;
 
 
     @Override
     public void resetBoard(int[][] boardState) {
         fianco.populateBoardBitmapsFrom2DIntArray(boardState);
+        alphaBetaSearch = new AlphaBetaSearch();
     }
 
     @Override
@@ -25,7 +27,7 @@ public class SimpleAlphaBetaSearchAgent implements IAgent {
         long[] player2Board = fianco.getPlayer2Board();
         long[] board = new long[]{player1Board[0], player1Board[1], player2Board[0], player2Board[1]};
 //        System.out.println(fianco);
-        long[] newBoard=AlphaBetaSearch.GetBestAlphaBetaMove(board, player == 1, player == 1, 10, -Integer.MAX_VALUE, Integer.MAX_VALUE);
+        long[] newBoard = alphaBetaSearch.GetBestAlphaBetaMove(board, player == 1, 10, -Integer.MAX_VALUE, Integer.MAX_VALUE);
 //        System.out.println("Board after generated Move:");
 //        BitmapFianco.ShowBitBoard(newBoard);
 
@@ -37,6 +39,7 @@ public class SimpleAlphaBetaSearchAgent implements IAgent {
     public SimpleAlphaBetaSearchAgent(BitmapFianco fianco, int player) {
         this.fianco = fianco;
         this.player = player;
+        this.alphaBetaSearch = new AlphaBetaSearch();
     }
 
 

@@ -1,5 +1,7 @@
 package FiancoGameEngine;
 
+import BitBoard.MoveConversion;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,6 +19,12 @@ public class MoveCommand {
         this.to_row = to_row;
         this.to_col = to_col;
         this.player = player;
+    }
+
+    public short toShort() {
+        int from = from_row * 9 + from_col + 1;
+        int to = to_row * 9 + to_col + 1;
+        return MoveConversion.pack(from, to);
     }
 
     public boolean doMove(Fianco fianco) {
@@ -317,7 +325,7 @@ public class MoveCommand {
 
     @Override
     public String toString() {
-        return "Player " + player + ": (" + COLUMN_NAMES[from_col]  + (from_row + 1) + ")->(" + COLUMN_NAMES[to_col] + (to_row + 1) + ")";
+        return "Player " + player + ": (" + COLUMN_NAMES[from_col] + (from_row + 1) + ")->(" + COLUMN_NAMES[to_col] + (to_row + 1) + ")";
     }
 
 }

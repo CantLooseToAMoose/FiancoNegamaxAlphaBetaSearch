@@ -41,7 +41,6 @@ public class GameClient {
                     System.out.println("Send Board back to Server");
                     out.write(move + "\n");
                     out.flush(); // Send new Boardstate
-
                 }
             }
         } catch (IOException e) {

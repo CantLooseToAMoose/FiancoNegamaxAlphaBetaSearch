@@ -75,6 +75,6 @@ public class Evaluate {
 
 
     public static int combinedEvaluate(long[] board, boolean isPlayerOne) {
-        return calculateWeightedPieceDifference(board, isPlayerOne);
+        return calculateWeightedPieceDifference(board, isPlayerOne) + randomValue(-1, 1);
     }
 }
