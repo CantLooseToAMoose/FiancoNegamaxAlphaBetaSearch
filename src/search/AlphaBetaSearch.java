@@ -13,8 +13,8 @@ public class AlphaBetaSearch {
     public static final int MAX_NUMBER_OF_MOVES = 15 * 4;
     public static final int MAX_NUMBER_OF_ACTUAL_DEPTH = 50;
     public static final int MAX_NUMBER_OF_MOVES_SINCE_LAST_CONVERSION = 15;
-    //    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728;//For four GB
-    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 / 2;
+    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728;//For 4 GB
+//    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 / 2;
 
     public static final int WIN_EVAL = 300;
     public static final int DRAW_EVAL = -15;
@@ -93,7 +93,6 @@ public class AlphaBetaSearch {
         if (entry != null) {
             //if entry exists
             if (zobristHash == entry.hash & BitMapMoveGenerator.isMoveValid(board, entry.bestMove, isPlayerOneTurn)) {
-
                 //the entry is of the same state
                 if (depth <= entry.depth) {
                     if (entry.type == 0) {
@@ -102,6 +101,9 @@ public class AlphaBetaSearch {
                         alpha = Math.max(oldAlpha, entry.score);
                     } else if (entry.type == 2) {
                         beta = Math.min(beta, entry.score);
+                    }
+                    if (alpha >= beta) {
+                        return entry.score;
                     }
                     ttMove = entry.bestMove;
                 } else {
