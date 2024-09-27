@@ -761,6 +761,15 @@ public class BitMapMoveGenerator {
         int toPosition = MoveConversion.unpackSecondNumber(move);
         long checkIfFromPositionIsFilled = 0L;
         long checkIfToPositionIsNotFilled = 0L;
+        long checkIfCapturePositionIsFilled = 1L;
+        int temp = fromPosition - toPosition;
+        temp = switch (temp) {
+            case -20 -> fromPosition + 10;
+            case -16 -> fromPosition + 8;
+            case 16 -> fromPosition - 8;
+            case 20 -> fromPosition - 10;
+            default -> 0;
+        };
         if (isPlayerOne) {
             if (fromPosition > 64) {
                 checkIfFromPositionIsFilled = board[1] & (1L << 64 - fromPosition + 64);
@@ -771,6 +780,13 @@ public class BitMapMoveGenerator {
                 checkIfToPositionIsNotFilled = board[1] & (1L << 64 - toPosition + 64);
             } else {
                 checkIfToPositionIsNotFilled = board[0] & (1L << 64 - toPosition);
+            }
+            if (temp != 0) {
+                if (temp > 64) {
+                    checkIfCapturePositionIsFilled = board[3] & (1L << 64 - temp + 64);
+                } else {
+                    checkIfCapturePositionIsFilled = board[2] & (1L << 64 - temp);
+                }
             }
         } else {
             if (fromPosition > 64) {
@@ -783,7 +799,14 @@ public class BitMapMoveGenerator {
             } else {
                 checkIfToPositionIsNotFilled = board[2] & (1L << 64 - toPosition);
             }
+            if (temp != 0) {
+                if (temp > 64) {
+                    checkIfCapturePositionIsFilled = board[1] & (1L << 64 - temp + 64);
+                } else {
+                    checkIfCapturePositionIsFilled = board[0] & (1L << 64 - temp);
+                }
+            }
         }
-        return checkIfFromPositionIsFilled == 1 && checkIfToPositionIsNotFilled == 0;
+        return checkIfFromPositionIsFilled == 1 && checkIfToPositionIsNotFilled == 0 && checkIfCapturePositionIsFilled == 1;
     }
 }

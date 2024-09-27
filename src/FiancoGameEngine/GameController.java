@@ -6,6 +6,7 @@ import ServerStructure.MessageLib;
 import javax.swing.*;
 
 public class GameController {
+    //Todo: check for repetition.
     private Fianco fianco;
     private BoardGUI gui;
     private int activePlayer;

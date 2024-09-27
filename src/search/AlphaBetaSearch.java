@@ -13,8 +13,9 @@ public class AlphaBetaSearch {
     public static final int MAX_NUMBER_OF_MOVES = 15 * 4;
     public static final int MAX_NUMBER_OF_ACTUAL_DEPTH = 50;
     public static final int MAX_NUMBER_OF_MOVES_SINCE_LAST_CONVERSION = 15;
-    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728;//For 4 GB
-//    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 / 2;
+    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 * 5; //20 GB
+//    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728;//4 GB
+//    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 /2 GB;
 
     public static final int WIN_EVAL = 300;
     public static final int DRAW_EVAL = -15;
@@ -90,11 +91,18 @@ public class AlphaBetaSearch {
         TranspositionTableEntry entry = TranspositionTable.retrieve(table, zobristHash, TRANSPOSITION_TABLE_SIZE);
         short ttMove = 0;
         boolean store = false;
-        if (entry != null) {
+        if (entry == null) {
+            store = true;
+        } else {
             //if entry exists
-            if (zobristHash == entry.hash & BitMapMoveGenerator.isMoveValid(board, entry.bestMove, isPlayerOneTurn)) {
+            if (zobristHash != entry.hash || !BitMapMoveGenerator.isMoveValid(board, entry.bestMove, isPlayerOneTurn)) {
+                store = true;
+            } else {
                 //the entry is of the same state
-                if (depth <= entry.depth) {
+                if (depth > entry.depth) {
+                    ttMove = entry.bestMove;
+                    store = true;
+                } else {
                     if (entry.type == 0) {
                         return entry.score;
                     } else if (entry.type == 1) {
@@ -106,15 +114,8 @@ public class AlphaBetaSearch {
                         return entry.score;
                     }
                     ttMove = entry.bestMove;
-                } else {
-                    ttMove = entry.bestMove;
-                    store = true;
                 }
-            } else {
-                store = true;
             }
-        } else {
-            store = true;
         }
         //Populate Move array
         int numberOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOneTurn, moveArray, actualDepth * MAX_NUMBER_OF_MOVES);
@@ -133,12 +134,13 @@ public class AlphaBetaSearch {
         }
         //Check for draw
         byte boardRep = 0;
-        for (int i = lastConversionMove; i < gameMoves + actualDepth; i = i + 2) {
+        for (int i = lastConversionMove + (gameMoves + actualDepth) % 2; i < gameMoves + actualDepth; i = i + 2) {
             if (zobristHash == boardHistory[i]) {
                 boardRep++;
             }
         }
-        if (boardRep > 2) {
+        //If this boardstate has been seen more than 2 times it is a draw
+        if (boardRep > 1) {
             return DRAW_EVAL;
         }
         short bestMove = 0;
@@ -169,15 +171,14 @@ public class AlphaBetaSearch {
             BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, move, isPlayerOneTurn);
             //Go deeper
             int value = -AlphaBeta(board, !isPlayerOneTurn, depth - 1, actualDepth + 1, lastConversionMove, moveArray, -beta, -alpha);
-            //Higher again undo move and undo history
-            updateBoardHistory(move, false, actualDepth, isPlayerOneTurn);
+            //Higher again undo move
             BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, move, isPlayerOneTurn);
 
             if (value > score) {
                 bestMove = move;
                 score = value;
             }
-            if (score > alpha) {
+            if (score >= alpha) {
                 alpha = score;
             }
             if (score >= beta) break;
