@@ -11,23 +11,39 @@ public class TranspositionTable {
     }
 
     // Store a position in the transposition table
-    public void store(long hash, int depth, int score, byte type, short bestMove) {
+    public static void store(TranspositionTableEntry[] table, long hash, int size, int depth, int score, byte type, short bestMove) {
         int index = (int) (hash % size); // Reduce hash to fit in array
-        if (index < 0) {
-            index += size; // Fix for negative indices
+        TranspositionTableEntry entry = retrieve(table, hash, size);
+        if (entry == null) {
+            //If there is no existing entry
+            entry = new TranspositionTableEntry(hash, depth, score, type, bestMove);
+            table[index] = entry;
+        } else {
+            //If there is an entry but the boardstate does not match, save the new one
+            if (entry.hash != hash) {
+//                entry = new TranspositionTableEntry(hash, depth, score, type, bestMove);
+                entry.hash = hash;
+                entry.depth = depth;
+                entry.score = score;
+                entry.type = type;
+                entry.bestMove = bestMove;
+            } else {
+                //If there is an entry and the boardstate matches save the one with the higher depth
+                if (entry.depth < depth) {
+//                    entry = new TranspositionTableEntry(hash, depth, score, type, bestMove);
+                    entry.depth = depth;
+                    entry.score = score;
+                    entry.type = type;
+                    entry.bestMove = bestMove;
+                }
+            }
         }
-        TranspositionTableEntry entry = new TranspositionTableEntry(hash, depth, score, type, bestMove);
-        table[index] = entry;
     }
 
     // Retrieve a position from the transposition table
-    public TranspositionTableEntry retrieve(long hash) {
+    public static TranspositionTableEntry retrieve(TranspositionTableEntry[] table, long hash, int size) {
         int index = (int) (hash % size);
-        if (index < 0) {
-            index += size; // Fix for negative indices
-        }
         TranspositionTableEntry entry = table[index];
-
         // Check if the entry's hash matches the current board's hash
         if (entry == null) {
             return null;

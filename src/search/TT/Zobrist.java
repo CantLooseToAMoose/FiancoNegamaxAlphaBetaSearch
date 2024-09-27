@@ -20,8 +20,8 @@ public class Zobrist {
 
         // Fill the Zobrist table with random long numbers
         for (int i = 0; i < BOARD_SIZE; i++) {
-            zobristTable[i][WHITE] = rand.nextLong();
-            zobristTable[i][BLACK] = rand.nextLong();
+            zobristTable[i][WHITE] = rand.nextLong()& Long.MAX_VALUE;;
+            zobristTable[i][BLACK] = rand.nextLong()& Long.MAX_VALUE;;
         }
         // Initial Zobrist hash is 0
         zobristHash = 0;

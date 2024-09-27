@@ -755,4 +755,35 @@ public class BitMapMoveGenerator {
 
         }
     }
+
+    public static boolean isMoveValid(long[] board, short move, boolean isPlayerOne) {
+        int fromPosition = MoveConversion.unpackFirstNumber(move);
+        int toPosition = MoveConversion.unpackSecondNumber(move);
+        long checkIfFromPositionIsFilled = 0L;
+        long checkIfToPositionIsNotFilled = 0L;
+        if (isPlayerOne) {
+            if (fromPosition > 64) {
+                checkIfFromPositionIsFilled = board[1] & (1L << 64 - fromPosition + 64);
+            } else {
+                checkIfFromPositionIsFilled = board[0] & (1L << 64 - fromPosition);
+            }
+            if (toPosition > 64) {
+                checkIfToPositionIsNotFilled = board[1] & (1L << 64 - toPosition + 64);
+            } else {
+                checkIfToPositionIsNotFilled = board[0] & (1L << 64 - toPosition);
+            }
+        } else {
+            if (fromPosition > 64) {
+                checkIfFromPositionIsFilled = board[3] & (1L << 64 - fromPosition + 64);
+            } else {
+                checkIfFromPositionIsFilled = board[2] & (1L << 64 - fromPosition);
+            }
+            if (toPosition > 64) {
+                checkIfToPositionIsNotFilled = board[3] & (1L << 64 - toPosition + 64);
+            } else {
+                checkIfToPositionIsNotFilled = board[2] & (1L << 64 - toPosition);
+            }
+        }
+        return checkIfFromPositionIsFilled == 1 && checkIfToPositionIsNotFilled == 0;
+    }
 }
