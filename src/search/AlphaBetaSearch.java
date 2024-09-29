@@ -19,7 +19,8 @@ public class AlphaBetaSearch {
     public static final int MAX_NUMBER_OF_MOVES = 15 * 4;
     public static final int MAX_NUMBER_OF_ACTUAL_DEPTH = 50;
     public static final int MAX_NUMBER_OF_MOVES_SINCE_LAST_CONVERSION = 15;
-    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 * 5; //20 GB\
+    public static final int PRIMARY_TRANSPOSITION_TABLE_SIZE = 16_384;
+    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 * 4; //16 GB\
 
 //    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728*2;//8 GB
 //    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728;//4 GB
@@ -36,7 +37,8 @@ public class AlphaBetaSearch {
     private int gameMoves = 0;
 
     //Transposition Table
-    private final TranspositionTableEntry[] table = new TranspositionTableEntry[TRANSPOSITION_TABLE_SIZE];
+    private final TranspositionTableEntry[] primaryTranspositionTable = new TranspositionTableEntry[PRIMARY_TRANSPOSITION_TABLE_SIZE];
+    private final TranspositionTableEntry[] transpositionTable = new TranspositionTableEntry[TRANSPOSITION_TABLE_SIZE];
 
     private boolean checkIfConversionMove(short move) {
         int from = MoveConversion.unpackFirstNumber(move);
@@ -96,7 +98,7 @@ public class AlphaBetaSearch {
         //Transposition Table
         long zobristHash = zobrist.getZobristHash();
         int oldAlpha = alpha;
-        TranspositionTableEntry entry = TranspositionTable.retrieve(table, zobristHash, TRANSPOSITION_TABLE_SIZE);
+        TranspositionTableEntry entry = TranspositionTable.retrieve(primaryTranspositionTable, transpositionTable, zobristHash, PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE);
         short ttMove = 0;
         boolean store = false;
         if (entry == null) {
@@ -198,7 +200,7 @@ public class AlphaBetaSearch {
             type = 1;
         }
         if (store) {
-            TranspositionTable.store(table, zobristHash, TRANSPOSITION_TABLE_SIZE, depth, score, type, bestMove);
+            TranspositionTable.store(primaryTranspositionTable, transpositionTable, zobristHash, PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, depth, score, type, bestMove);
         }
         return score;
     }
@@ -276,7 +278,7 @@ public class AlphaBetaSearch {
         AtomicInteger moveIndex = new AtomicInteger(0); // To track which move is being processed
 
         // Create an ExecutorService with 4 threads
-        ExecutorService executor = Executors.newFixedThreadPool(4);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
 
         // Define the task each thread will perform
         Runnable task = () -> {
@@ -316,7 +318,7 @@ public class AlphaBetaSearch {
         };
 
         // Submit the tasks to the executor
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 2; i++) {
             executor.submit(task);
         }
 
