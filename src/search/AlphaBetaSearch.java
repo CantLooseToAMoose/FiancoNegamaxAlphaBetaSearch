@@ -8,19 +8,27 @@ import search.TT.TranspositionTable;
 import search.TT.TranspositionTableEntry;
 import search.TT.Zobrist;
 
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
 public class AlphaBetaSearch {
     //Constants
     public static final int MAX_NUMBER_OF_MOVES = 15 * 4;
     public static final int MAX_NUMBER_OF_ACTUAL_DEPTH = 50;
     public static final int MAX_NUMBER_OF_MOVES_SINCE_LAST_CONVERSION = 15;
-    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 * 5; //20 GB
+    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 * 5; //20 GB\
+
+//    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728*2;//8 GB
 //    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728;//4 GB
 //    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 /2 GB;
 
     public static final int WIN_EVAL = 300;
     public static final int DRAW_EVAL = -15;
     //For Debugging
-    public int nodes = 0;
+    public AtomicInteger nodes = new AtomicInteger(0);
     //For Repetition Detection
     private long[] boardHistory = new long[MAX_NUMBER_OF_ACTUAL_DEPTH + MAX_NUMBER_OF_MOVES_SINCE_LAST_CONVERSION];
     private Zobrist zobrist = new Zobrist();
@@ -84,7 +92,7 @@ public class AlphaBetaSearch {
     //Alpha Beta
     public int AlphaBeta(long[] board, boolean isPlayerOneTurn, int depth, int actualDepth, int lastConversionMove, short[] moveArray, int alpha, int beta) {
         //Debugging
-        nodes++;
+        nodes.incrementAndGet();
         //Transposition Table
         long zobristHash = zobrist.getZobristHash();
         int oldAlpha = alpha;
@@ -206,7 +214,7 @@ public class AlphaBetaSearch {
         System.out.println("Evaluation of this Position: " + Evaluate.combinedEvaluate(board, isPlayerOne));
         //For debugging:
         long startTime = System.nanoTime();
-        nodes = 0;
+        nodes.set(0);
 
         //For all the moves
         short[] moveArray = new short[MAX_NUMBER_OF_MOVES * MAX_NUMBER_OF_ACTUAL_DEPTH];
@@ -237,10 +245,96 @@ public class AlphaBetaSearch {
         long endTime = System.nanoTime();
         System.out.println("Nodes: " + nodes);
         System.out.println("Time: " + (endTime - startTime) / 1_000_000_000.0 + "s");
-        System.out.println("Nodes per second:" + nodes / ((endTime - startTime) / 1_000_000_000.0));
+        System.out.println("Nodes per second:" + nodes.get() / ((endTime - startTime) / 1_000_000_000.0));
         System.out.println("Score:" + bestScore);
         //Updating the board state history
         updateBoardHistory(lastBoard, new BitmapFianco(bestBoard).convertBitmapTo2DIntArray(), isPlayerOne);
         return bestBoard;
+    }
+
+    public long[] GetBestAlphaBetaMoveParallel(long[] board, boolean isPlayerOne, int depth, int alpha, int beta) {
+        // Update History with the new Board received
+        if (this.lastBoard != null) {
+            updateBoardHistory(lastBoard, new BitmapFianco(board).convertBitmapTo2DIntArray(), !isPlayerOne);
+        } else {
+            this.lastBoard = new BitmapFianco(board).convertBitmapTo2DIntArray();
+        }
+        System.out.println("Evaluation of this Position: " + Evaluate.combinedEvaluate(board, isPlayerOne));
+
+        long startTime = System.nanoTime();
+        nodes.set(0);
+
+        // Move array and depth initialization
+        short[] moveArray = new short[MAX_NUMBER_OF_MOVES * MAX_NUMBER_OF_ACTUAL_DEPTH];
+        int actualDepth = 0;
+        int numberOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOne, moveArray, actualDepth);
+
+        // Shared variables
+        AtomicInteger sharedAlpha = new AtomicInteger(alpha);
+        AtomicReference<Long[]> bestBoard = new AtomicReference<>(null);
+        AtomicInteger bestScore = new AtomicInteger(-Integer.MAX_VALUE);
+        AtomicInteger moveIndex = new AtomicInteger(0); // To track which move is being processed
+
+        // Create an ExecutorService with 4 threads
+        ExecutorService executor = Executors.newFixedThreadPool(4);
+
+        // Define the task each thread will perform
+        Runnable task = () -> {
+            while (true) {
+                int currentMoveIndex = moveIndex.getAndIncrement(); // Atomically get the next move
+                if (currentMoveIndex > numberOfMoves) {
+                    break; // No more moves to process
+                }
+
+                short move = moveArray[currentMoveIndex];
+                updateBoardHistory(move, true, 0, isPlayerOne);
+                long[] syncedBoard = board.clone();
+//                BitmapFianco.ShowBitBoard(syncedBoard);
+//                System.out.println("Move is valid: " + BitMapMoveGenerator.isMoveValid(syncedBoard, move, isPlayerOne) + "move is: " + MoveConversion.unpackFirstNumber(move) + "->" + MoveConversion.unpackSecondNumber(move));
+                BitMapMoveGenerator.makeOrUnmakeMoveInPlace(syncedBoard, move, isPlayerOne);
+
+                int value = -AlphaBeta(syncedBoard, !isPlayerOne, depth - 1, actualDepth + 1, gameMoves, moveArray.clone(), -beta, -sharedAlpha.get());
+
+                // Synchronize access to update alpha, bestScore, and bestBoard
+                synchronized (this) {
+                    if (value > bestScore.get()) {
+                        bestScore.set(value);
+                        bestBoard.set(new Long[]{syncedBoard[0], syncedBoard[1], syncedBoard[2], syncedBoard[3]});
+                    }
+                    if (bestScore.get() > sharedAlpha.get()) {
+                        sharedAlpha.set(bestScore.get());
+                    }
+                    if (bestScore.get() >= beta) {
+                        break; // Prune further searches
+                    }
+                }
+
+                // Undo the move
+                updateBoardHistory(move, false, 0, isPlayerOne);
+                BitMapMoveGenerator.makeOrUnmakeMoveInPlace(syncedBoard, move, isPlayerOne);
+            }
+        };
+
+        // Submit the tasks to the executor
+        for (int i = 0; i < 4; i++) {
+            executor.submit(task);
+        }
+
+        // Shut down the executor and wait for all threads to finish
+        executor.shutdown();
+        while (!executor.isTerminated()) {
+            // Wait for all threads to complete
+        }
+
+        long endTime = System.nanoTime();
+        System.out.println("Nodes: " + nodes);
+        System.out.println("Time: " + (endTime - startTime) / 1_000_000_000.0 + "s");
+        System.out.println("Nodes per second: " + nodes.get() / ((endTime - startTime) / 1_000_000_000.0));
+        System.out.println("Score: " + bestScore.get());
+
+        // Update board history
+        long[] longArrayBestBoard = new long[]{bestBoard.get()[0], bestBoard.get()[1], bestBoard.get()[2], bestBoard.get()[3]};
+        updateBoardHistory(lastBoard, new BitmapFianco(longArrayBestBoard).convertBitmapTo2DIntArray(), isPlayerOne);
+        return longArrayBestBoard;
     }
 }

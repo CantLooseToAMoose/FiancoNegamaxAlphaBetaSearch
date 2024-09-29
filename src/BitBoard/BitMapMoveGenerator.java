@@ -807,6 +807,6 @@ public class BitMapMoveGenerator {
                 }
             }
         }
-        return checkIfFromPositionIsFilled == 1 && checkIfToPositionIsNotFilled == 0 && checkIfCapturePositionIsFilled == 1;
+        return Long.bitCount(checkIfFromPositionIsFilled) == 1 && checkIfToPositionIsNotFilled == 0 && Long.bitCount(checkIfCapturePositionIsFilled) == 1;
     }
 }

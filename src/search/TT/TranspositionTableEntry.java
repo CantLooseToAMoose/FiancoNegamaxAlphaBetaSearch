@@ -14,4 +14,12 @@ public class TranspositionTableEntry {
         this.type = type;
         this.bestMove = bestMove;
     }
+
+    public synchronized void setValuesSynced(long hash, int depth, int score, byte type, short bestMove) {
+        this.hash = hash;
+        this.depth = depth;
+        this.score = score;
+        this.type = type;
+        this.bestMove = bestMove;
+    }
 }
