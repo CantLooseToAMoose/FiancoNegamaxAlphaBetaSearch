@@ -1,12 +1,7 @@
 package AI;
 
-import BitBoard.BitMapMoveGenerator;
 import BitBoard.BitmapFianco;
 import search.AlphaBetaSearch;
-import search.MetaSearchHolder;
-
-import java.util.LinkedList;
-import java.util.Random;
 
 public class SimpleAlphaBetaSearchAgent implements IAgent {
     private BitmapFianco fianco;
@@ -27,7 +22,9 @@ public class SimpleAlphaBetaSearchAgent implements IAgent {
         long[] player2Board = fianco.getPlayer2Board();
         long[] board = new long[]{player1Board[0], player1Board[1], player2Board[0], player2Board[1]};
 //        System.out.println(fianco);
-        long[] newBoard = alphaBetaSearch.GetBestAlphaBetaMoveParallel(board, player == 1, 11, -Integer.MAX_VALUE, Integer.MAX_VALUE);
+        long[] newBoard = alphaBetaSearch.GetBestMoveIterativeDeepening(board, player == 1, 30, -Integer.MAX_VALUE, Integer.MAX_VALUE, 5_000_000_000L);
+
+//        long[] newBoard = alphaBetaSearch.GetBestAlphaBetaMoveParallel(board, player == 1, 10, -Integer.MAX_VALUE, Integer.MAX_VALUE);
 //        System.out.println("Board after generated Move:");
 //        BitmapFianco.ShowBitBoard(newBoard);
 
