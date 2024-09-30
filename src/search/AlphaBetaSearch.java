@@ -8,37 +8,52 @@ import search.TT.TranspositionTable;
 import search.TT.TranspositionTableEntry;
 import search.TT.Zobrist;
 
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
+//TODO: Can you think on opponents turn?
 
 public class AlphaBetaSearch {
     //Constants
     public static final int MAX_NUMBER_OF_MOVES = 15 * 4;
     public static final int MAX_NUMBER_OF_ACTUAL_DEPTH = 50;
     public static final int MAX_NUMBER_OF_MOVES_SINCE_LAST_CONVERSION = 15;
+
+    //Transposition Table
     public static final int PRIMARY_TRANSPOSITION_TABLE_SIZE = 16_384;
-    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 * 4; //16 GB\
 
-//    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728*2;//8 GB
-//    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728;//4 GB
-//    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 /2 GB;
 
+    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728;//4 GB
+    //    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 * 4; //16 GB\
+    //    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728*2;//8 GB
+    //    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 /2 GB;
+
+    //Parralelization
+    public static final int NUMBER_OF_THREADS = 4;
+
+    //Evaluation Constants
     public static final int WIN_EVAL = 300;
     public static final int DRAW_EVAL = -15;
+
+
     //For Debugging
     public AtomicInteger nodes = new AtomicInteger(0);
+    public AtomicInteger ttEntriesFound = new AtomicInteger(0);
+    public AtomicInteger ttHashCollision = new AtomicInteger(0);
+    public AtomicInteger exactTTPruning = new AtomicInteger(0);
+    public AtomicInteger basicTTPruning = new AtomicInteger(0);
+    public AtomicInteger alphaBetaPruning = new AtomicInteger(0);
     //For Repetition Detection
     private long[] boardHistory = new long[MAX_NUMBER_OF_ACTUAL_DEPTH + MAX_NUMBER_OF_MOVES_SINCE_LAST_CONVERSION];
-    private Zobrist zobrist = new Zobrist();
+    private long zobristHash = 0;
     private int[][] lastBoard;
     private int gameMoves = 0;
 
     //Transposition Table
     private final TranspositionTableEntry[] primaryTranspositionTable = new TranspositionTableEntry[PRIMARY_TRANSPOSITION_TABLE_SIZE];
-    private final TranspositionTableEntry[] transpositionTable = new TranspositionTableEntry[TRANSPOSITION_TABLE_SIZE];
+    private TranspositionTableEntry[] transpositionTable = new TranspositionTableEntry[TRANSPOSITION_TABLE_SIZE];
 
     private boolean checkIfConversionMove(short move) {
         int from = MoveConversion.unpackFirstNumber(move);
@@ -66,6 +81,7 @@ public class AlphaBetaSearch {
 
 
     //For History
+    //This is only done at the beginning and end of search
     public void updateBoardHistory(int[][] lastBoard, int[][] newBoard, boolean isPlayerOne) {
 
         MoveCommand moveCommand = MoveCommand.CreateMoveCommandFromConsecutiveBoardStates(lastBoard, newBoard, isPlayerOne ? 1 : 2);
@@ -75,28 +91,28 @@ public class AlphaBetaSearch {
                 boardHistory = new long[MAX_NUMBER_OF_ACTUAL_DEPTH + MAX_NUMBER_OF_MOVES_SINCE_LAST_CONVERSION];
                 gameMoves = 0;
             }
-            updateBoardHistory(move, true, 0, isPlayerOne);
+            this.zobristHash = Zobrist.updateHash(this.zobristHash, move, isPlayerOne);
+            updateBoardHistory(zobristHash, this.boardHistory, true, 0);
             this.lastBoard = newBoard;
         } else {
             System.out.println("Something went wrong when trying to generate a short move from the previous board state");
         }
     }
 
-    private void updateBoardHistory(short move, boolean doMove, int actualDepth, boolean isPlayerOne) {
-        zobrist.updateHash(move, isPlayerOne);
+    //This is done during the search
+    private void updateBoardHistory(long zobristHash, long[] boardHistory, boolean doMove, int actualDepth) {
         if (doMove) {
-            boardHistory[gameMoves + actualDepth] = zobrist.getZobristHash();
+            boardHistory[gameMoves + actualDepth] = zobristHash;
         } else {
-            boardHistory[gameMoves + actualDepth] = zobrist.getZobristHash();
+            boardHistory[gameMoves + actualDepth] = zobristHash;
         }
     }
 
     //Alpha Beta
-    public int AlphaBeta(long[] board, boolean isPlayerOneTurn, int depth, int actualDepth, int lastConversionMove, short[] moveArray, int alpha, int beta) {
+    public int AlphaBeta(long[] board, long zobristHash, boolean isPlayerOneTurn, int depth, int actualDepth, long[] boardHistory, int lastConversionMove, short[] moveArray, int alpha, int beta) {
         //Debugging
         nodes.incrementAndGet();
         //Transposition Table
-        long zobristHash = zobrist.getZobristHash();
         int oldAlpha = alpha;
         TranspositionTableEntry entry = TranspositionTable.retrieve(primaryTranspositionTable, transpositionTable, zobristHash, PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE);
         short ttMove = 0;
@@ -104,8 +120,10 @@ public class AlphaBetaSearch {
         if (entry == null) {
             store = true;
         } else {
+            ttEntriesFound.incrementAndGet();
             //if entry exists
             if (zobristHash != entry.hash || !BitMapMoveGenerator.isMoveValid(board, entry.bestMove, isPlayerOneTurn)) {
+                ttHashCollision.incrementAndGet();
                 store = true;
             } else {
                 //the entry is of the same state
@@ -114,6 +132,7 @@ public class AlphaBetaSearch {
                     store = true;
                 } else {
                     if (entry.type == 0) {
+                        exactTTPruning.incrementAndGet();
                         return entry.score;
                     } else if (entry.type == 1) {
                         alpha = Math.max(oldAlpha, entry.score);
@@ -121,6 +140,7 @@ public class AlphaBetaSearch {
                         beta = Math.min(beta, entry.score);
                     }
                     if (alpha >= beta) {
+                        basicTTPruning.incrementAndGet();
                         return entry.score;
                     }
                     ttMove = entry.bestMove;
@@ -177,11 +197,13 @@ public class AlphaBetaSearch {
             if (checkIfConversionMove(move)) {
                 lastConversionMove = gameMoves;
             }
-            updateBoardHistory(move, true, actualDepth, isPlayerOneTurn);
+            zobristHash = Zobrist.updateHash(zobristHash, move, isPlayerOneTurn);
+            updateBoardHistory(zobristHash, boardHistory, true, actualDepth);
             BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, move, isPlayerOneTurn);
             //Go deeper
-            int value = -AlphaBeta(board, !isPlayerOneTurn, depth - 1, actualDepth + 1, lastConversionMove, moveArray, -beta, -alpha);
-            //Higher again undo move
+            int value = -AlphaBeta(board, zobristHash, !isPlayerOneTurn, depth - 1, actualDepth + 1, boardHistory, lastConversionMove, moveArray, -beta, -alpha);
+            //Higher again undo move also with zobrist Hash
+            zobristHash = Zobrist.updateHash(zobristHash, move, isPlayerOneTurn);
             BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, move, isPlayerOneTurn);
 
             if (value > score) {
@@ -191,7 +213,10 @@ public class AlphaBetaSearch {
             if (score >= alpha) {
                 alpha = score;
             }
-            if (score >= beta) break;
+            if (score >= beta) {
+                alphaBetaPruning.incrementAndGet();
+                break;
+            }
         }
         byte type = 0;
         if (score <= oldAlpha) {
@@ -199,59 +224,10 @@ public class AlphaBetaSearch {
         } else if (score >= beta) {
             type = 1;
         }
-        if (store) {
+        if (store && depth > 2) {
             TranspositionTable.store(primaryTranspositionTable, transpositionTable, zobristHash, PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, depth, score, type, bestMove);
         }
         return score;
-    }
-
-    public long[] GetBestAlphaBetaMove(long[] board, boolean isPlayerOne, int depth, int alpha, int beta) {
-//      TODO: Can you Parallelize this?
-        //Update History with the new Board received
-        if (this.lastBoard != null) {
-            updateBoardHistory(lastBoard, new BitmapFianco(board).convertBitmapTo2DIntArray(), !isPlayerOne);
-        } else {
-            this.lastBoard = new BitmapFianco(board).convertBitmapTo2DIntArray();
-        }
-        System.out.println("Evaluation of this Position: " + Evaluate.combinedEvaluate(board, isPlayerOne));
-        //For debugging:
-        long startTime = System.nanoTime();
-        nodes.set(0);
-
-        //For all the moves
-        short[] moveArray = new short[MAX_NUMBER_OF_MOVES * MAX_NUMBER_OF_ACTUAL_DEPTH];
-        int actualDepth = 0;
-        //For getting the best move
-        long[] bestBoard = null;
-        int bestScore = -Integer.MAX_VALUE;
-        //Populating move array
-        int numberOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOne, moveArray, actualDepth);
-        for (int i = 0; i < numberOfMoves; i++) {
-            short move = moveArray[i];
-            //Doing move and adding the new board state to the history
-            updateBoardHistory(move, true, 0, isPlayerOne);
-            BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, move, isPlayerOne);
-            int value = -AlphaBeta(board, !isPlayerOne, depth - 1, actualDepth + 1, gameMoves, moveArray, -beta, -alpha);
-            if (value > bestScore) {
-                bestScore = value;
-                bestBoard = board.clone();
-            }
-            //Undoing the move and removing it from the history
-            updateBoardHistory(move, false, 0, isPlayerOne);
-            BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, move, isPlayerOne);
-            if (bestScore > alpha) {
-                alpha = bestScore;
-            }
-            if (bestScore >= beta) break;
-        }
-        long endTime = System.nanoTime();
-        System.out.println("Nodes: " + nodes);
-        System.out.println("Time: " + (endTime - startTime) / 1_000_000_000.0 + "s");
-        System.out.println("Nodes per second:" + nodes.get() / ((endTime - startTime) / 1_000_000_000.0));
-        System.out.println("Score:" + bestScore);
-        //Updating the board state history
-        updateBoardHistory(lastBoard, new BitmapFianco(bestBoard).convertBitmapTo2DIntArray(), isPlayerOne);
-        return bestBoard;
     }
 
     public long[] GetBestAlphaBetaMoveParallel(long[] board, boolean isPlayerOne, int depth, int alpha, int beta) {
@@ -263,22 +239,31 @@ public class AlphaBetaSearch {
         }
         System.out.println("Evaluation of this Position: " + Evaluate.combinedEvaluate(board, isPlayerOne));
 
+        //Reset debug values
         long startTime = System.nanoTime();
         nodes.set(0);
+        basicTTPruning.set(0);
+        exactTTPruning.set(0);
+        alphaBetaPruning.set(0);
+        ttHashCollision.set(0);
 
-        // Move array and depth initialization
+
+        // Reinitialize
         short[] moveArray = new short[MAX_NUMBER_OF_MOVES * MAX_NUMBER_OF_ACTUAL_DEPTH];
+        this.transpositionTable = new TranspositionTableEntry[TRANSPOSITION_TABLE_SIZE];
         int actualDepth = 0;
         int numberOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOne, moveArray, actualDepth);
 
         // Shared variables
         AtomicInteger sharedAlpha = new AtomicInteger(alpha);
         AtomicReference<Long[]> bestBoard = new AtomicReference<>(null);
+        AtomicInteger sharedBestMoves = new AtomicInteger(0);
         AtomicInteger bestScore = new AtomicInteger(-Integer.MAX_VALUE);
         AtomicInteger moveIndex = new AtomicInteger(0); // To track which move is being processed
 
-        // Create an ExecutorService with 4 threads
-        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        // Create an ExecutorService with n threads
+        ExecutorService executor = Executors.newFixedThreadPool(NUMBER_OF_THREADS);
 
         // Define the task each thread will perform
         Runnable task = () -> {
@@ -289,19 +274,22 @@ public class AlphaBetaSearch {
                 }
 
                 short move = moveArray[currentMoveIndex];
-                updateBoardHistory(move, true, 0, isPlayerOne);
-                long[] syncedBoard = board.clone();
+                long[] boardHistory = this.boardHistory.clone();
+                long zobristHash = Zobrist.updateHash(this.zobristHash, move, isPlayerOne);
+                updateBoardHistory(zobristHash, boardHistory, true, actualDepth);
+                long[] unsyncedBoard = board.clone();
 //                BitmapFianco.ShowBitBoard(syncedBoard);
 //                System.out.println("Move is valid: " + BitMapMoveGenerator.isMoveValid(syncedBoard, move, isPlayerOne) + "move is: " + MoveConversion.unpackFirstNumber(move) + "->" + MoveConversion.unpackSecondNumber(move));
-                BitMapMoveGenerator.makeOrUnmakeMoveInPlace(syncedBoard, move, isPlayerOne);
+                BitMapMoveGenerator.makeOrUnmakeMoveInPlace(unsyncedBoard, move, isPlayerOne);
 
-                int value = -AlphaBeta(syncedBoard, !isPlayerOne, depth - 1, actualDepth + 1, gameMoves, moveArray.clone(), -beta, -sharedAlpha.get());
+                int value = -AlphaBeta(unsyncedBoard, zobristHash, !isPlayerOne, depth - 1, actualDepth + 1, boardHistory, 0, moveArray.clone(), -beta, -sharedAlpha.get());
 
                 // Synchronize access to update alpha, bestScore, and bestBoard
                 synchronized (this) {
                     if (value > bestScore.get()) {
                         bestScore.set(value);
-                        bestBoard.set(new Long[]{syncedBoard[0], syncedBoard[1], syncedBoard[2], syncedBoard[3]});
+                        sharedBestMoves.set(move);
+                        bestBoard.set(new Long[]{unsyncedBoard[0], unsyncedBoard[1], unsyncedBoard[2], unsyncedBoard[3]});
                     }
                     if (bestScore.get() > sharedAlpha.get()) {
                         sharedAlpha.set(bestScore.get());
@@ -311,14 +299,11 @@ public class AlphaBetaSearch {
                     }
                 }
 
-                // Undo the move
-                updateBoardHistory(move, false, 0, isPlayerOne);
-                BitMapMoveGenerator.makeOrUnmakeMoveInPlace(syncedBoard, move, isPlayerOne);
             }
         };
 
         // Submit the tasks to the executor
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < NUMBER_OF_THREADS; i++) {
             executor.submit(task);
         }
 
@@ -330,11 +315,19 @@ public class AlphaBetaSearch {
 
         long endTime = System.nanoTime();
         System.out.println("Nodes: " + nodes);
+        System.out.println("Transposition Entries found: " + ttEntriesFound + ". Percent of Total nodes: " + (float)ttEntriesFound.get() / nodes.get() * 100 + "%");
+        System.out.println("Transposition Table Collision: " + ttHashCollision + ". Percent of entries found: " + (float)ttHashCollision.get() / ttEntriesFound.get() * 100 + "%");
+        System.out.println("Alpha Beta Pruning: " + alphaBetaPruning + ". Percent of Total nodes: " +(float) alphaBetaPruning.get() / nodes.get() * 100 + "%");
+        System.out.println("Transposition Table Exact Value Pruning: " + exactTTPruning + ". Percent of correct entries found: " +(float) exactTTPruning.get() / (ttEntriesFound.get() - ttHashCollision.get()) * 100 + "%");
+        System.out.println("Transposition Table Alpha Beta Pruning: " + basicTTPruning + ". Percent of correct entries found: " +(float) basicTTPruning.get() / (ttEntriesFound.get() - ttHashCollision.get()) * 100 + "%");
+
+
         System.out.println("Time: " + (endTime - startTime) / 1_000_000_000.0 + "s");
         System.out.println("Nodes per second: " + nodes.get() / ((endTime - startTime) / 1_000_000_000.0));
         System.out.println("Score: " + bestScore.get());
 
         // Update board history
+        zobristHash = Zobrist.updateHash(zobristHash, (short) sharedBestMoves.get(), isPlayerOne);
         long[] longArrayBestBoard = new long[]{bestBoard.get()[0], bestBoard.get()[1], bestBoard.get()[2], bestBoard.get()[3]};
         updateBoardHistory(lastBoard, new BitmapFianco(longArrayBestBoard).convertBitmapTo2DIntArray(), isPlayerOne);
         return longArrayBestBoard;

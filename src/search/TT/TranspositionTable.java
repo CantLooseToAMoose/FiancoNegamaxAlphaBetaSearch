@@ -11,7 +11,7 @@ public class TranspositionTable {
     }
 
     // Store a position in the transposition table
-    public static void store(TranspositionTableEntry[] table, long hash, int size, int depth, int score, byte type, short bestMove) {
+    public static void storeAlwaysNewOne(TranspositionTableEntry[] table, long hash, int size, int depth, int score, byte type, short bestMove) {
         int index = (int) (hash & (size - 1)); // Reduce hash to fit in array
         TranspositionTableEntry entry = retrieve(table, hash, size);
         if (entry == null) {
@@ -31,29 +31,40 @@ public class TranspositionTable {
         }
     }
 
+    public static void storeDeeper(TranspositionTableEntry[] table, long hash, int size, int depth, int score, byte type, short bestMove) {
+        int index = (int) (hash & (size - 1)); // Reduce hash to fit in array
+        TranspositionTableEntry entry = retrieve(table, hash, size);
+        if (entry == null) {
+            //If there is no existing entry
+            entry = new TranspositionTableEntry(hash, depth, score, type, bestMove);
+            table[index] = entry;
+        } else {
+            //If there is an entry save the one with the higher depth
+            if (entry.depth < depth) {
+                entry.setValuesSynced(hash, depth, score, type, bestMove);
+            }
+        }
+    }
+
     public static void store(TranspositionTableEntry[] primaryTable, TranspositionTableEntry[] table, long hash, int primarySize, int size, int depth, int score, byte type, short bestMove) {
-        store(primaryTable, hash, primarySize, depth, score, type, bestMove);//Always store most recent in the table
-        store(table, hash, size, depth, score, type, bestMove);
+        storeAlwaysNewOne(primaryTable, hash, primarySize, depth, score, type, bestMove);//Always store most recent in the table
+        storeDeeper(table, hash, size, depth, score, type, bestMove);
     }
 
     // Retrieve a position from the transposition table
     public static TranspositionTableEntry retrieve(TranspositionTableEntry[] table, long hash, int size) {
         int index = (int) (hash & (size - 1));
-        TranspositionTableEntry entry = table[index];
-        // Check if the entry's hash matches the current board's hash
-        if (entry == null) {
-            return null;
-        }
-        return entry;
+        return table[index];
     }
 
     public static TranspositionTableEntry retrieve(TranspositionTableEntry[] primaryTable, TranspositionTableEntry[] table, long hash, int primarySize, int size) {
         TranspositionTableEntry entry = retrieve(primaryTable, hash, primarySize);
         if (entry != null) {
-            return entry;
-        } else {
-            return retrieve(table, hash, size);
+            if (entry.hash == hash) {
+                return entry;
+            }
         }
+        return retrieve(table, hash, size);
     }
 
 }
