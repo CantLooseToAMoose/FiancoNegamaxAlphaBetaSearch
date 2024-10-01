@@ -1,17 +1,20 @@
 package ServerStructure;
 
+import AI.IAgent;
+import AI.IterativeAlphaBetaSearchAgent;
 import AI.RandomFiancoAgent;
 import AI.SimpleAlphaBetaSearchAgent;
 import BitBoard.BitmapFianco;
-import AI.IAgent;
-import AI.RandomFiancoBitMapAgent;
 import FiancoGameEngine.Fianco;
+import FiancoGameEngine.MoveCommand;
 
 import java.io.*;
-import java.net.*;
+import java.net.Socket;
 
 public class GameClient {
     private static final String movePrefix = "Your move:";
+    private static final String undoPrefix = "Undo";
+    private static final String restartPrefix = "Restart";
 
     private IAgent aiAgent;
     private Socket socket;
@@ -34,13 +37,18 @@ public class GameClient {
             while (true) {
                 System.out.println("Waiting for Server message");
                 String serverMessage = in.readLine(); // Waiting for server's message (polling)
+                System.out.println("Received Message:" + serverMessage);
                 if (serverMessage.startsWith(movePrefix)) {
-                    String BoardArrayString = serverMessage.substring(movePrefix.length()); //Get only the Boardstate from Message
-                    int[][] BoardArray = MessageLib.convertBoardStringToArray(BoardArrayString); // Convert to right Datatype
-                    String move = MessageLib.convertBoardArrayToString(aiAgent.generateMove(BoardArray)); // AI logic to choose a move from
+                    String moveCommandString = serverMessage.substring(movePrefix.length()); //Get only the Boardstate from Message
+                    MoveCommand moveCommand = MessageLib.convertMoveCommandStringToMoveCommand(moveCommandString);// Convert to right Datatype
+                    String move = MessageLib.convertMoveCommandToString(aiAgent.generateMove(moveCommand)); // AI logic to choose a move from
                     System.out.println("Send Board back to Server");
                     out.write(move + "\n");
                     out.flush(); // Send new Boardstate
+                } else if (serverMessage.startsWith(undoPrefix)) {
+                    aiAgent.undoMove();
+                } else if (serverMessage.startsWith(restartPrefix)) {
+                    aiAgent.resetBoard();
                 }
             }
         } catch (IOException e) {
@@ -58,14 +66,17 @@ public class GameClient {
         }
 
         BitmapFianco bitmapFianco = new BitmapFianco();
+        Fianco fianco = new Fianco();
         bitmapFianco.populateBoardBitmapsFrom2DIntArray(new Fianco().getBoardState());
         IAgent aiAgent = null;
         if (whichAi == 0) {
             aiAgent = new RandomFiancoAgent(new Fianco(), Integer.parseInt(args[1]));
         } else if (whichAi == 1) {
-            aiAgent = new RandomFiancoBitMapAgent(bitmapFianco, Integer.parseInt(args[1]));
+            aiAgent = new RandomFiancoAgent(fianco, Integer.parseInt(args[1]));
         } else if (whichAi == 2) {
             aiAgent = new SimpleAlphaBetaSearchAgent(bitmapFianco, Integer.parseInt(args[1]));
+        } else if (whichAi == 3) {
+            aiAgent = new IterativeAlphaBetaSearchAgent(bitmapFianco, Integer.parseInt(args[1]));
         }
         GameClient client = new GameClient("localhost", 12345, args[0], aiAgent);
         client.start();

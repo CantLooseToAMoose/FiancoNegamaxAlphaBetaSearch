@@ -8,11 +8,41 @@ import java.util.List;
 public class MoveCommand {
     private static final char[] COLUMN_NAMES = new char[]{'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'};
     private int from_row;
+
+    public int getFrom_row() {
+        return from_row;
+    }
+
+    public int getFrom_col() {
+        return from_col;
+    }
+
+    public int getTo_row() {
+        return to_row;
+    }
+
+    public int getTo_col() {
+        return to_col;
+    }
+
+    public int getPlayer() {
+        return player;
+    }
+
     private int from_col;
     private int to_row;
     private int to_col;
     private int player;
 
+    /**
+     * The definition of a move in fianco. From is the position of the piece that got moved and to is the landing position of the piece. Capture moves are implicit.
+     * Row and Column start from 0.
+     * @param from_row
+     * @param from_col
+     * @param to_row
+     * @param to_col
+     * @param player
+     */
     public MoveCommand(int from_row, int from_col, int to_row, int to_col, int player) {
         this.from_row = from_row;
         this.from_col = from_col;
@@ -65,7 +95,7 @@ public class MoveCommand {
             if (player == 1) {
                 boardState[from_row + delta_row / 2][from_col + delta_col / 2] = 2;
             } else {
-                boardState[from_row + delta_row / 2][from_col + delta_col / 2] = 2;
+                boardState[from_row + delta_row / 2][from_col + delta_col / 2] = 1;
             }
 
         }

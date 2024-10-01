@@ -1,6 +1,6 @@
 package BitBoard;
 
-import FiancoGameEngine.Fianco;
+import FiancoGameEngine.MoveCommand;
 
 /**
  * This class helps with converting two different types of Move Representations. You can either have a Move be represented as a long array or a short value.For the long array the first two
@@ -42,6 +42,22 @@ public class MoveConversion {
             return 0;
         }
         return pack(fromPosition, toPosition);
+    }
+
+    public static MoveCommand getMoveCommandFromShortMove(short move, boolean isPlayerOne) {
+        int from = unpackFirstNumber(move);
+        int to = unpackSecondNumber(move);
+        int from_row = (from - 1) / 9;
+        int from_col = (from - 1) % 9;
+        int to_row = (to - 1) / 9;
+        int to_col = (to - 1) % 9;
+        return new MoveCommand(from_row, from_col, to_row, to_col, isPlayerOne ? 1 : 2);
+    }
+
+    public static short getShortMoveFromMoveCommand(MoveCommand move) {
+        int from = move.getFrom_row() * 9 + move.getFrom_col() + 1;
+        int to = move.getTo_row() * 9 + move.getTo_col() + 1;
+        return MoveConversion.pack(from, to);
     }
 
     /**
@@ -127,6 +143,7 @@ public class MoveConversion {
     public static int unpackSecondNumber(short packed) {
         return packed & 0xFF; // Extract the lower byte
     }
+
 
     public static void main(String[] args) {
         BitmapFianco bitmapFianco = new BitmapFianco();

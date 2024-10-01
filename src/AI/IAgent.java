@@ -1,9 +1,13 @@
 package AI;
 
+import FiancoGameEngine.MoveCommand;
+
 public interface IAgent {
 
-    public void resetBoard(int[][] boardState);
+    public void resetBoard();
 
-    public int[][] generateMove(int[][] boardState);
+    public MoveCommand generateMove(MoveCommand move);
+
+    public void undoMove();
 
 }

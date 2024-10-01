@@ -9,7 +9,7 @@ import search.AlphaBetaSearch;
 
 import java.util.ArrayList;
 
-public class SimpleAlphaBetaSearchAgent implements IAgent {
+public class IterativeAlphaBetaSearchAgent implements IAgent {
     private BitmapFianco fianco;
     private final int player;
     private AlphaBetaSearch alphaBetaSearch;
@@ -27,13 +27,13 @@ public class SimpleAlphaBetaSearchAgent implements IAgent {
 
     @Override
     public MoveCommand generateMove(MoveCommand move) {
-        if(move!=null){
+        if (move != null) {
             short shortMove = MoveConversion.getShortMoveFromMoveCommand(move);
             BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, shortMove, !(player == 1));
             moveHistory.add(move);
         }
 //        System.out.println(fianco);
-        short newMove = alphaBetaSearch.GetBestAlphaBetaMoveParallel(this.board, player == 1, 2, -Integer.MAX_VALUE, Integer.MAX_VALUE);
+        short newMove = alphaBetaSearch.GetBestMoveIterativeDeepening(this.board, player == 1, 30, -Integer.MAX_VALUE, Integer.MAX_VALUE, 15_000_000_000L);
 //        System.out.println("Board after generated Move:");
 //        BitmapFianco.ShowBitBoard(newBoard);
         BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, newMove, (player == 1));
@@ -46,7 +46,7 @@ public class SimpleAlphaBetaSearchAgent implements IAgent {
         BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, MoveConversion.getShortMoveFromMoveCommand(move), move.getPlayer() == 1);
     }
 
-    public SimpleAlphaBetaSearchAgent(BitmapFianco fianco, int player) {
+    public IterativeAlphaBetaSearchAgent(BitmapFianco fianco, int player) {
         this.fianco = fianco;
         this.player = player;
         this.alphaBetaSearch = new AlphaBetaSearch();

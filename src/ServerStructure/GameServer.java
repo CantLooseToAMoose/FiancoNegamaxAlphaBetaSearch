@@ -4,7 +4,9 @@ import FiancoGameEngine.Fianco;
 import FiancoGameEngine.GameController;
 
 import java.io.*;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 public class GameServer {
     private ServerSocket serverSocket;
@@ -33,7 +35,7 @@ public class GameServer {
         while (true) {
             controller.askForAiMoves();
             try {
-                Thread.sleep(50); // Small delay to yield CPU time
+                Thread.sleep(15); // Small delay to yield CPU time
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -70,9 +72,9 @@ public class GameServer {
         if (playerSocket != null && !playerSocket.isClosed()) {
             try {
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter(playerSocket.getOutputStream()));
-                String boardState = MessageLib.convertBoardArrayToString(controller.getBoardState());
+                String moveCommand = MessageLib.convertMoveCommandToString(controller.getLastMoveCommand());
 //                System.out.println("Send Boardstate" + boardState + "  to Player: " + playerId);
-                out.write("Your move:" + boardState + "\n");
+                out.write("Your move:" + moveCommand + "\n");
                 out.flush();
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(playerSocket.getInputStream()));
@@ -102,8 +104,40 @@ public class GameServer {
                 e.printStackTrace();
             }
         }
-        return MessageLib.convertBoardArrayToString(controller.getBoardState());
+        return MessageLib.convertMoveCommandToString(null);
     }
+
+
+    public void callUndoOnAiPlayer(Socket playerSocket, String playerId) {
+//        System.out.println("getMoveFromPlayer called for: " + playerId);
+        if (playerSocket != null && !playerSocket.isClosed()) {
+            try {
+                BufferedWriter out = new BufferedWriter(new OutputStreamWriter(playerSocket.getOutputStream()));
+                String moveCommand = MessageLib.convertMoveCommandToString(controller.getLastMoveCommand());
+//                System.out.println("Send Boardstate" + boardState + "  to Player: " + playerId);
+                out.write("Undo \n");
+                out.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    public void callRestartOnAiPlayer(Socket playerSocket, String playerId) {
+//        System.out.println("getMoveFromPlayer called for: " + playerId);
+        if (playerSocket != null && !playerSocket.isClosed()) {
+            try {
+                BufferedWriter out = new BufferedWriter(new OutputStreamWriter(playerSocket.getOutputStream()));
+//                System.out.println("Send Boardstate" + boardState + "  to Player: " + playerId);
+                out.write("Restart \n");
+                out.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
 
     public Socket getPlayer1Socket() {
         return player1Socket;

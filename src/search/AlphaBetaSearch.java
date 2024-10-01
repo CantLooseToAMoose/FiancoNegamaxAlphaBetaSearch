@@ -20,17 +20,16 @@ import java.util.concurrent.atomic.LongAdder;
 
 public class AlphaBetaSearch {
     //Constants
+    //
     public static final int MAX_NUMBER_OF_MOVES = 15 * 4;
     public static final int MAX_NUMBER_OF_ACTUAL_DEPTH = 50;
     public static final int MAX_NUMBER_OF_MOVES_SINCE_LAST_CONVERSION = 15;
 
-    //Transposition Table
-    public static final int PRIMARY_TRANSPOSITION_TABLE_SIZE = 16_384;
-
-
+    //Transposition Table Sizes
+    public static final int PRIMARY_TRANSPOSITION_TABLE_SIZE = 16_384; //Needs to be really small to optimally fit completely in Cache
     public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728;//4 GB
-    //    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 * 4; //16 GB\
-    //    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728*2;//8 GB
+//    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 * 4; //16 GB
+//    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728*2;//8 GB
 //    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 / 2;//2GB
 //    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 / 4;//1 GB;
 
@@ -49,6 +48,7 @@ public class AlphaBetaSearch {
     public LongAdder exactTTPruning = new LongAdder();
     public LongAdder basicTTPruning = new LongAdder();
     public LongAdder alphaBetaPruning = new LongAdder();
+
     //For Repetition Detection
     private long[] boardHistory = new long[MAX_NUMBER_OF_ACTUAL_DEPTH + MAX_NUMBER_OF_MOVES_SINCE_LAST_CONVERSION];
     private long zobristHash = 0;
@@ -195,6 +195,9 @@ public class AlphaBetaSearch {
                 move = pvLine[actualDepth];
                 if (move == 0) {
                     continue;
+                } else {
+                    System.out.println(("Used PV Line Move at actual depth" + actualDepth));
+                    System.out.println(Arrays.toString(pvLine));
                 }
             } else {
                 //get Move from move Array
@@ -215,7 +218,7 @@ public class AlphaBetaSearch {
             BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, move, isPlayerOneTurn);
             short[] childPV = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
             //Go deeper
-            int value = -AlphaBeta(board, zobristHash, !isPlayerOneTurn, depth - 1, actualDepth + 1, boardHistory, lastConversionMove, moveArray, -beta, -alpha, childPV);
+            int value = -AlphaBeta(board, zobristHash, !isPlayerOneTurn, depth - 1, actualDepth + 1, boardHistory, lastConversionMove, moveArray, -beta, -alpha, childPV.clone());
             //Higher again undo move also with zobrist Hash
             zobristHash = Zobrist.updateHash(zobristHash, move, isPlayerOneTurn);
             BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, move, isPlayerOneTurn);
@@ -246,7 +249,7 @@ public class AlphaBetaSearch {
         return score;
     }
 
-    public long[] GetBestAlphaBetaMoveParallel(long[] board, boolean isPlayerOne, int depth, int alpha, int beta) {
+    public short GetBestAlphaBetaMoveParallel(long[] board, boolean isPlayerOne, int depth, int alpha, int beta) {
         // Update History with the new Board received
         if (this.lastBoard != null) {
             updateBoardHistory(lastBoard, new BitmapFianco(board).convertBitmapTo2DIntArray(), !isPlayerOne);
@@ -273,7 +276,7 @@ public class AlphaBetaSearch {
         // Shared variables
         AtomicInteger sharedAlpha = new AtomicInteger(alpha);
         AtomicReference<Long[]> bestBoard = new AtomicReference<>(null);
-        AtomicInteger sharedBestMoves = new AtomicInteger(0);
+        AtomicInteger sharedBestMove = new AtomicInteger(0);
         AtomicInteger bestScore = new AtomicInteger(-Integer.MAX_VALUE);
         AtomicInteger moveIndex = new AtomicInteger(0); // To track which move is being processed
 
@@ -300,13 +303,14 @@ public class AlphaBetaSearch {
 //                System.out.println("Move is valid: " + BitMapMoveGenerator.isMoveValid(syncedBoard, move, isPlayerOne) + "move is: " + MoveConversion.unpackFirstNumber(move) + "->" + MoveConversion.unpackSecondNumber(move));
                 BitMapMoveGenerator.makeOrUnmakeMoveInPlace(unsyncedBoard, move, isPlayerOne);
 
-                int value = -AlphaBeta(unsyncedBoard, zobristHash, !isPlayerOne, depth - 1, actualDepth + 1, boardHistory, 0, moveArray.clone(), -beta, -sharedAlpha.get(), pvLine);
+                int value = -AlphaBeta(unsyncedBoard, zobristHash, !isPlayerOne, depth - 1, actualDepth + 1, boardHistory, 0, moveArray.clone(), -beta, -sharedAlpha.get(), pvLine.clone());
 
                 // Synchronize access to update alpha, bestScore, and bestBoard
                 synchronized (this) {
                     if (value > bestScore.get()) {
                         bestScore.set(value);
-                        sharedBestMoves.set(move);
+                        sharedBestMove.set(move);
+                        pvLine[actualDepth] = (short) sharedBestMove.get();
                         bestBoard.set(new Long[]{unsyncedBoard[0], unsyncedBoard[1], unsyncedBoard[2], unsyncedBoard[3]});
                     }
                     if (bestScore.get() > sharedAlpha.get()) {
@@ -345,10 +349,10 @@ public class AlphaBetaSearch {
         System.out.println("Score: " + bestScore.get());
 
         // Update board history
-        zobristHash = Zobrist.updateHash(zobristHash, (short) sharedBestMoves.get(), isPlayerOne);
+        zobristHash = Zobrist.updateHash(zobristHash, (short) sharedBestMove.get(), isPlayerOne);
         long[] longArrayBestBoard = new long[]{bestBoard.get()[0], bestBoard.get()[1], bestBoard.get()[2], bestBoard.get()[3]};
         updateBoardHistory(lastBoard, new BitmapFianco(longArrayBestBoard).convertBitmapTo2DIntArray(), isPlayerOne);
-        return longArrayBestBoard;
+        return (short) sharedBestMove.get();
     }
 
     /**
@@ -360,7 +364,7 @@ public class AlphaBetaSearch {
      * @param maxTime     maximum time in microseconds
      * @return
      */
-    public long[] GetBestMoveIterativeDeepening(long[] board, boolean isPlayerOne, int maxDepth, int alpha, int beta, long maxTime) {
+    public short GetBestMoveIterativeDeepening(long[] board, boolean isPlayerOne, int maxDepth, int alpha, int beta, long maxTime) {
         // Update History with the new Board received
         if (this.lastBoard != null) {
             updateBoardHistory(lastBoard, new BitmapFianco(board).convertBitmapTo2DIntArray(), !isPlayerOne);
@@ -502,7 +506,7 @@ public class AlphaBetaSearch {
         // Update board history and return the best board found
         zobristHash = Zobrist.updateHash(zobristHash, (short) sharedBestMove.get(), isPlayerOne);
         updateBoardHistory(lastBoard, new BitmapFianco(bestBoard).convertBitmapTo2DIntArray(), isPlayerOne);
-        return bestBoard;
+        return (short) sharedBestMove.get();
     }
 
 }

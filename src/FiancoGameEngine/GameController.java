@@ -4,9 +4,9 @@ import ServerStructure.GameServer;
 import ServerStructure.MessageLib;
 
 import javax.swing.*;
+import java.util.ArrayList;
 
 public class GameController {
-    //Todo: check for repetition.
     private Fianco fianco;
     private BoardGUI gui;
     private int activePlayer;
@@ -14,9 +14,9 @@ public class GameController {
 
     // Run Game with active Server
     private GameServer gameServer;
+    private boolean calledUndo = false;
+    private boolean calledRestart = false;
 
-    // If undo AI Move wait a brief moment before requesting another move
-    private float aiTimeOut;
 
     public GameController(Fianco fianco) {
         this.fianco = fianco;
@@ -31,21 +31,40 @@ public class GameController {
     }
 
     public synchronized void askForAiMoves() {
+        if (calledUndo) {
+            if (activePlayer == 1 && gameServer.isPlayer1Connected()) {
+                gameServer.callUndoOnAiPlayer(gameServer.getPlayer1Socket(), "player1");
+            } else if (activePlayer == 2 && gameServer.isPlayer2Connected()) {
+                gameServer.callUndoOnAiPlayer(gameServer.getPlayer2Socket(), "player2");
+            }
+            calledUndo = false;
+            return;
+        }
+        if (calledRestart) {
+            if (gameServer.isPlayer1Connected()) {
+                gameServer.callRestartOnAiPlayer(gameServer.getPlayer1Socket(), "player1");
+            }
+            if (gameServer.isPlayer2Connected()) {
+                gameServer.callRestartOnAiPlayer(gameServer.getPlayer2Socket(), "player2");
+            }
+            calledRestart = false;
+            return;
+        }
         if (!gameIsRunning) {
             return;
         }
         if (activePlayer == 1 && gameServer.isPlayer1Connected()) {
             String move = gameServer.getMoveFromPlayer(gameServer.getPlayer1Socket(), "player1");
-            int[][] newBoardState = MessageLib.convertBoardStringToArray(move);
-            if (!move(newBoardState)) {
+            MoveCommand moveCommand = MessageLib.convertMoveCommandStringToMoveCommand(move);
+            if (!move(moveCommand)) {
                 System.out.println("Stop Game after Wrong Move! (in GameController)");
                 gameIsRunning = false;
                 Logger.getInstance().log("AIPlayer1 tried invalid Move,try Again");
             }
         } else if (activePlayer == 2 && gameServer.isPlayer2Connected()) {
             String move = gameServer.getMoveFromPlayer(gameServer.getPlayer2Socket(), "player2");
-            int[][] newBoardState = MessageLib.convertBoardStringToArray(move);
-            if (!move(newBoardState)) {
+            MoveCommand moveCommand = MessageLib.convertMoveCommandStringToMoveCommand(move);
+            if (!move(moveCommand)) {
                 System.out.println("Stop Game after Wrong Move! (in GameController)");
                 gameIsRunning = false;
                 Logger.getInstance().log("AIPlayer 2 tried invalid Move, try Again");
@@ -62,6 +81,7 @@ public class GameController {
         System.out.println("Game started!");
         gameIsRunning = true;
         fianco.Restart();
+        calledRestart = true;
     }
 
 
@@ -73,8 +93,7 @@ public class GameController {
         return false;
     }
 
-    public synchronized boolean move(int[][] newBoardState) {
-        MoveCommand moveCommand = MoveCommand.CreateMoveCommandFromConsecutiveBoardStates(fianco.getBoardState(), newBoardState, activePlayer);
+    public synchronized boolean move(MoveCommand moveCommand) {
         if (moveCommand == null) {
             return false;
         }
@@ -89,9 +108,13 @@ public class GameController {
 
     private synchronized void moveMisc() {
         SwingUtilities.invokeLater(() -> gui.redrawBoard(getBoardState()));
-        if (isGameOver()) {
+        if (someOneWon()) {
             gameIsRunning = false;
             Logger.getInstance().log("Game over. Player " + activePlayer + " won the game! \n The game lasted: " + fianco.getMoveCommands().size() + " moves.");
+        }
+        if (isDraw()) {
+            gameIsRunning = false;
+            Logger.getInstance().log("Game over. It is a draw!");
         }
         switchActivePlayer();
     }
@@ -101,6 +124,7 @@ public class GameController {
         if (fianco.Undo()) {//
             gui.redrawBoard(getBoardState());// Only switch players when successfully undoing a move
             switchActivePlayer();
+            this.calledUndo = true;
         }
         gameIsRunning = false;
     }
@@ -113,8 +137,12 @@ public class GameController {
         return gameIsRunning;
     }
 
-    private boolean isGameOver() {
-        return fianco.checkForGameOver();
+    private boolean someOneWon() {
+        return fianco.checkForWin();
+    }
+
+    private boolean isDraw() {
+        return fianco.checkForDraw();
     }
 
     private void switchActivePlayer() {
@@ -129,13 +157,20 @@ public class GameController {
         return fianco.getBoardState();
     }
 
+    public synchronized MoveCommand getLastMoveCommand() {
+        ArrayList<MoveCommand> moveCommands = fianco.getMoveCommands();
+        if (moveCommands.isEmpty()) {
+            return null;
+        }
+        return moveCommands.get(moveCommands.size() - 1);
+    }
+
     public void AIPlayerJoined(int aiPlayer) {
         if (aiPlayer == 1) {
             gui.setPlayerOneTypeLabel(true);
         } else if (aiPlayer == 2) {
             gui.setPlayerTwoTypeLabel(true);
         }
-
     }
 
 }

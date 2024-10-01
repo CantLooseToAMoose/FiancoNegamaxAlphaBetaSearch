@@ -5,6 +5,7 @@ import FiancoGameEngine.MoveCommand;
 
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.Stack;
 
 public class RandomFiancoAgent implements IAgent {
     private Fianco fianco;
@@ -12,14 +13,16 @@ public class RandomFiancoAgent implements IAgent {
 
 
     @Override
-    public void resetBoard(int[][] boardState) {
-        fianco.setBoardState(boardState);
+    public void resetBoard() {
+        fianco.initializeBoardState();
     }
 
     @Override
-    public int[][] generateMove(int[][] boardState) {
-        resetBoard(boardState);
+    public MoveCommand generateMove(MoveCommand move) {
         //Create All Possible Moves
+        if (move != null) {
+            fianco.Move(move);
+        }
         ArrayList<MoveCommand> possibleMoves = new ArrayList<>();
         ArrayList<int[]> pieces = fianco.getAllPiecePositionsForPlayer(player);
         for (int[] piece : pieces) {
@@ -31,11 +34,16 @@ public class RandomFiancoAgent implements IAgent {
         int randomInt = rand.nextInt(possibleMoves.size());
         MoveCommand moveCommand = possibleMoves.get(randomInt);
         if (!fianco.Move(moveCommand)) {
-            return generateMove(boardState);
+            return generateMove(move);
         }
-        return fianco.getBoardState();
+        return moveCommand;
 
 
+    }
+
+    @Override
+    public void undoMove() {
+        fianco.Undo();
     }
 
     public RandomFiancoAgent(Fianco fianco, int player) {
