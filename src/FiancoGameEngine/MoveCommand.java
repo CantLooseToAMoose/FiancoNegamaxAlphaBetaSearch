@@ -37,6 +37,7 @@ public class MoveCommand {
     /**
      * The definition of a move in fianco. From is the position of the piece that got moved and to is the landing position of the piece. Capture moves are implicit.
      * Row and Column start from 0.
+     *
      * @param from_row
      * @param from_col
      * @param to_row
@@ -239,6 +240,7 @@ public class MoveCommand {
             int[] deltaTwo = nonZeros2.get(1);
             return CreateCorrectMovecommandDirection(deltaOne, deltaTwo, player);
         } else {
+            //FIXME: why do you get called from UpdateBoardHistory?
             System.out.println("Error: There should not be more than 3 different Elements between Consecutive Boardstates");
             return null;
         }

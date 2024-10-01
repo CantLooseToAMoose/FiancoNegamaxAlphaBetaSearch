@@ -52,6 +52,8 @@ public class AlphaBetaSearch {
     //For Repetition Detection
     private long[] boardHistory = new long[MAX_NUMBER_OF_ACTUAL_DEPTH + MAX_NUMBER_OF_MOVES_SINCE_LAST_CONVERSION];
     private long zobristHash = 0;
+    //Todo: Add mirrored transposition Table entry
+    private long mirroredZobristHash = 0;
     private int[][] lastBoard;
     private int gameMoves = 0;
 
@@ -96,9 +98,11 @@ public class AlphaBetaSearch {
                 gameMoves = 0;
             }
             this.zobristHash = Zobrist.updateHash(this.zobristHash, move, isPlayerOne);
+            this.mirroredZobristHash = Zobrist.updateHash(this.mirroredZobristHash, MoveConversion.getHorizontallyMirroredShort(move), isPlayerOne);
             updateBoardHistory(zobristHash, this.boardHistory, true, 0);
             this.lastBoard = newBoard;
         } else {
+            //FIXME: Why are you called?
             System.out.println("Something went wrong when trying to generate a short move from the previous board state");
         }
     }
@@ -113,7 +117,7 @@ public class AlphaBetaSearch {
     }
 
     //Alpha Beta
-    public int AlphaBeta(long[] board, long zobristHash, boolean isPlayerOneTurn, int depth, int actualDepth, long[] boardHistory, int lastConversionMove, short[] moveArray, int alpha, int beta, short[] pvLine) {
+    public int AlphaBeta(long[] board, long zobristHash, long mirroredZobristHash, boolean isPlayerOneTurn, int depth, int actualDepth, long[] boardHistory, int lastConversionMove, short[] moveArray, int alpha, int beta, short[] pvLine) {
         //Debugging
         nodes.increment();
         //Transposition Table
@@ -218,7 +222,7 @@ public class AlphaBetaSearch {
             BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, move, isPlayerOneTurn);
             short[] childPV = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
             //Go deeper
-            int value = -AlphaBeta(board, zobristHash, !isPlayerOneTurn, depth - 1, actualDepth + 1, boardHistory, lastConversionMove, moveArray, -beta, -alpha, childPV.clone());
+            int value = -AlphaBeta(board, zobristHash, mirroredZobristHash, !isPlayerOneTurn, depth - 1, actualDepth + 1, boardHistory, lastConversionMove, moveArray, -beta, -alpha, childPV.clone());
             //Higher again undo move also with zobrist Hash
             zobristHash = Zobrist.updateHash(zobristHash, move, isPlayerOneTurn);
             BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, move, isPlayerOneTurn);
@@ -245,6 +249,8 @@ public class AlphaBetaSearch {
         }
         if (store && depth > 2) {
             TranspositionTable.store(primaryTranspositionTable, transpositionTable, zobristHash, PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, depth, score, type, bestMove);
+            TranspositionTable.store(primaryTranspositionTable, transpositionTable, mirroredZobristHash, PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, depth, score, type, MoveConversion.getHorizontallyMirroredShort(bestMove));
+
         }
         return score;
     }
@@ -297,13 +303,14 @@ public class AlphaBetaSearch {
                 short move = moveArray[currentMoveIndex];
                 long[] boardHistory = this.boardHistory.clone();
                 long zobristHash = Zobrist.updateHash(this.zobristHash, move, isPlayerOne);
+                long mirrorredZobristHash = Zobrist.updateHash(this.mirroredZobristHash, MoveConversion.getHorizontallyMirroredShort(move), isPlayerOne);
                 updateBoardHistory(zobristHash, boardHistory, true, actualDepth);
                 long[] unsyncedBoard = board.clone();
 //                BitmapFianco.ShowBitBoard(syncedBoard);
 //                System.out.println("Move is valid: " + BitMapMoveGenerator.isMoveValid(syncedBoard, move, isPlayerOne) + "move is: " + MoveConversion.unpackFirstNumber(move) + "->" + MoveConversion.unpackSecondNumber(move));
                 BitMapMoveGenerator.makeOrUnmakeMoveInPlace(unsyncedBoard, move, isPlayerOne);
 
-                int value = -AlphaBeta(unsyncedBoard, zobristHash, !isPlayerOne, depth - 1, actualDepth + 1, boardHistory, 0, moveArray.clone(), -beta, -sharedAlpha.get(), pvLine.clone());
+                int value = -AlphaBeta(unsyncedBoard, zobristHash, mirrorredZobristHash, !isPlayerOne, depth - 1, actualDepth + 1, boardHistory, 0, moveArray.clone(), -beta, -sharedAlpha.get(), pvLine.clone());
 
                 // Synchronize access to update alpha, bestScore, and bestBoard
                 synchronized (this) {
@@ -350,6 +357,7 @@ public class AlphaBetaSearch {
 
         // Update board history
         zobristHash = Zobrist.updateHash(zobristHash, (short) sharedBestMove.get(), isPlayerOne);
+        mirroredZobristHash = Zobrist.updateHash(mirroredZobristHash, MoveConversion.getHorizontallyMirroredShort((short) sharedBestMove.get()), isPlayerOne);
         long[] longArrayBestBoard = new long[]{bestBoard.get()[0], bestBoard.get()[1], bestBoard.get()[2], bestBoard.get()[3]};
         updateBoardHistory(lastBoard, new BitmapFianco(longArrayBestBoard).convertBitmapTo2DIntArray(), isPlayerOne);
         return (short) sharedBestMove.get();
@@ -425,10 +433,11 @@ public class AlphaBetaSearch {
                     long[] boardCopy = board.clone();
                     long[] boardHistory = this.boardHistory.clone();
                     long zobristHash = Zobrist.updateHash(this.zobristHash, move, isPlayerOne);
+                    long mirroredHash = Zobrist.updateHash(this.mirroredZobristHash, move, isPlayerOne);
                     updateBoardHistory(zobristHash, boardHistory, true, 0);
                     BitMapMoveGenerator.makeOrUnmakeMoveInPlace(boardCopy, move, isPlayerOne);
                     short[] childPV = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
-                    int value = -AlphaBeta(boardCopy, zobristHash, !isPlayerOne, iterativeDepth - 1, actualDepth + 1, boardHistory, 0, moveArray, -beta, -sharedAlphaDepth.get(), childPV);
+                    int value = -AlphaBeta(boardCopy, zobristHash, mirroredZobristHash, !isPlayerOne, iterativeDepth - 1, actualDepth + 1, boardHistory, 0, moveArray, -beta, -sharedAlphaDepth.get(), childPV);
 
                     // Synchronize access to update alpha, bestScore, and bestBoard
                     synchronized (this) {
@@ -505,6 +514,7 @@ public class AlphaBetaSearch {
 
         // Update board history and return the best board found
         zobristHash = Zobrist.updateHash(zobristHash, (short) sharedBestMove.get(), isPlayerOne);
+        mirroredZobristHash = Zobrist.updateHash(mirroredZobristHash, MoveConversion.getHorizontallyMirroredShort((short) sharedBestMove.get()), isPlayerOne);
         updateBoardHistory(lastBoard, new BitmapFianco(bestBoard).convertBitmapTo2DIntArray(), isPlayerOne);
         return (short) sharedBestMove.get();
     }

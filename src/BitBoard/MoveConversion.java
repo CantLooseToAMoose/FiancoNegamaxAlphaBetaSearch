@@ -60,6 +60,25 @@ public class MoveConversion {
         return MoveConversion.pack(from, to);
     }
 
+    public static short getHorizontallyMirroredShort(short move) {
+        int from = unpackFirstNumber(move);
+        int to = unpackSecondNumber(move);
+        return MoveConversion.pack(getHorizontallyMirroredPosition(from), getHorizontallyMirroredPosition(to));
+
+    }
+
+    public static int getHorizontallyMirroredPosition(int position) {
+        // Calculate the row and column of the current position
+        int row = (position - 1) / 9;
+        int column = (position - 1) % 9;
+
+        // Calculate the mirrored column
+        int mirroredColumn = 8 - column;
+
+        // Calculate the new position after horizontal mirroring
+        return row * 9 + mirroredColumn + 1;
+    }
+
     /**
      * I really hate this function. Why does it have to be so nested? I want to change it but it works
      *
