@@ -34,7 +34,7 @@ public class AlphaBetaSearch {
 //    public static final int TRANSPOSITION_TABLE_SIZE = 134_217_728 / 4;//1 GB;
 
     //Parralelization
-    public static final int NUMBER_OF_THREADS = 2;
+    public static final int NUMBER_OF_THREADS = 1;
 
     //Evaluation Constants
     public static final int WIN_EVAL = 300;
@@ -200,8 +200,7 @@ public class AlphaBetaSearch {
                 if (move == 0) {
                     continue;
                 } else {
-                    System.out.println(("Used PV Line Move at actual depth" + actualDepth));
-                    System.out.println(Arrays.toString(pvLine));
+
                 }
             } else {
                 //get Move from move Array
@@ -220,9 +219,9 @@ public class AlphaBetaSearch {
             updateBoardHistory(zobristHash, boardHistory, true, actualDepth);
             //Generate Moves
             BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, move, isPlayerOneTurn);
-            short[] childPV = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
+            short[] childPV = pvLine.clone();
             //Go deeper
-            int value = -AlphaBeta(board, zobristHash, mirroredZobristHash, !isPlayerOneTurn, depth - 1, actualDepth + 1, boardHistory, lastConversionMove, moveArray, -beta, -alpha, childPV.clone());
+            int value = -AlphaBeta(board, zobristHash, mirroredZobristHash, !isPlayerOneTurn, depth - 1, actualDepth + 1, boardHistory, lastConversionMove, moveArray, -beta, -alpha, childPV);
             //Higher again undo move also with zobrist Hash
             zobristHash = Zobrist.updateHash(zobristHash, move, isPlayerOneTurn);
             BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, move, isPlayerOneTurn);
@@ -427,7 +426,7 @@ public class AlphaBetaSearch {
             Runnable task = () -> {
                 while (true) {
                     int currentMoveIndex = moveIndex.getAndIncrement();  // Atomically get next move
-                    if (currentMoveIndex > numberOfMoves) break;  // No more moves to process
+                    if (currentMoveIndex >= numberOfMoves) break;  // No more moves to process
 
                     short move = moveArray[currentMoveIndex];
                     long[] boardCopy = board.clone();

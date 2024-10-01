@@ -33,7 +33,7 @@ public class IterativeAlphaBetaSearchAgent implements IAgent {
             moveHistory.add(move);
         }
 //        System.out.println(fianco);
-        short newMove = alphaBetaSearch.GetBestMoveIterativeDeepening(this.board, player == 1, 30, -Integer.MAX_VALUE, Integer.MAX_VALUE, 15_000_000_000L);
+        short newMove = alphaBetaSearch.GetBestMoveIterativeDeepening(this.board, player == 1, 30, -Integer.MAX_VALUE, Integer.MAX_VALUE, 5_000_000_000L);
 //        System.out.println("Board after generated Move:");
 //        BitmapFianco.ShowBitBoard(newBoard);
         BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, newMove, (player == 1));
