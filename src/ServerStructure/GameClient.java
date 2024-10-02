@@ -3,7 +3,6 @@ package ServerStructure;
 import AI.IAgent;
 import AI.IterativeAlphaBetaSearchAgent;
 import AI.RandomFiancoAgent;
-import AI.SimpleAlphaBetaSearchAgent;
 import BitBoard.BitmapFianco;
 import FiancoGameEngine.Fianco;
 import FiancoGameEngine.MoveCommand;
@@ -74,7 +73,7 @@ public class GameClient {
         } else if (whichAi == 1) {
             aiAgent = new RandomFiancoAgent(fianco, Integer.parseInt(args[1]));
         } else if (whichAi == 2) {
-            aiAgent = new SimpleAlphaBetaSearchAgent(bitmapFianco, Integer.parseInt(args[1]));
+            System.out.println("There is no more Simple Parrallel Agent use Iterative instead.");
         } else if (whichAi == 3) {
             aiAgent = new IterativeAlphaBetaSearchAgent(bitmapFianco, Integer.parseInt(args[1]));
         }
