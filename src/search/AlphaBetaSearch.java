@@ -191,7 +191,7 @@ public class AlphaBetaSearch {
 
             // try out transposition table move first
             if (i == -1) {
-                if (ttMove == 0) {
+                if (ttMove == 0 || ttMove == pvLine[actualDepth]) {
                     continue;
                 }
                 move = ttMove;
@@ -200,7 +200,9 @@ public class AlphaBetaSearch {
                 if (move == 0) {
                     continue;
                 } else {
-
+                    if (!BitMapMoveGenerator.isMoveValid(board, move, isPlayerOneTurn)) {
+                        continue;
+                    }
                 }
             } else {
                 //get Move from move Array
@@ -253,6 +255,7 @@ public class AlphaBetaSearch {
         }
         return score;
     }
+
     /**
      * @param board
      * @param isPlayerOne
@@ -300,7 +303,7 @@ public class AlphaBetaSearch {
 
         for (int depth = 1; depth <= maxDepth; depth++) {
             // Create a final copy of depth for use in the lambda
-
+            bestScore.set(-Integer.MAX_VALUE);
             System.out.println("Starting search at depth: " + depth);
 
             // Reset shared variables for this depth
