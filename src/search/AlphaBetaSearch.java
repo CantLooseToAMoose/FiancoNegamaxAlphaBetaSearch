@@ -158,7 +158,6 @@ public class AlphaBetaSearch {
             }
         }
         //Populate Move array
-        int numberOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOneTurn, moveArray, actualDepth * MAX_NUMBER_OF_MOVES);
         int win = Evaluate.evaluateWin(board, isPlayerOneTurn);
         //Check for win
         if (win != 0) {
@@ -168,6 +167,7 @@ public class AlphaBetaSearch {
         if (depth == 0) {
             return Evaluate.combinedEvaluate(board, isPlayerOneTurn);
         }
+        int numberOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOneTurn, moveArray, actualDepth * MAX_NUMBER_OF_MOVES);
         //Check for no more moves
         if (numberOfMoves == 0) {
             return -(WIN_EVAL + depth);
@@ -251,7 +251,6 @@ public class AlphaBetaSearch {
         if (store && depth > 2) {
             TranspositionTable.store(primaryTranspositionTable, transpositionTable, zobristHash, PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, depth, score, type, bestMove);
             TranspositionTable.store(primaryTranspositionTable, transpositionTable, mirroredZobristHash, PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, depth, score, type, MoveConversion.getHorizontallyMirroredShort(bestMove));
-
         }
         return score;
     }
@@ -283,10 +282,9 @@ public class AlphaBetaSearch {
         alphaBetaPruning.reset();
         ttHashCollision.reset();
 
-        // Shared variables
-        AtomicInteger sharedAlpha = new AtomicInteger(alpha);
-        long[] bestBoard = null;
-        AtomicInteger sharedBestMove = new AtomicInteger(0);
+        short afterIterationBestMove = 0;
+        int afterIterationBestScore = 0;
+        long[] afterIterationBestBoard = null;
         AtomicInteger bestScore = new AtomicInteger(-Integer.MAX_VALUE);
 
 
@@ -296,13 +294,13 @@ public class AlphaBetaSearch {
         } else {
             Arrays.fill(this.transpositionTable, null); // Clear previous entries
         }
-        int actualDepth = 0;
 
         short[] pvLine = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
 
 
         for (int depth = 1; depth <= maxDepth; depth++) {
             // Create a final copy of depth for use in the lambda
+            AtomicInteger sharedBestMove = new AtomicInteger(0);
             bestScore.set(-Integer.MAX_VALUE);
             System.out.println("Starting search at depth: " + depth);
 
@@ -311,7 +309,7 @@ public class AlphaBetaSearch {
             AtomicInteger moveIndex = new AtomicInteger(0);  // Track move index for parallel threads
             short[] moveArray = new short[MAX_NUMBER_OF_MOVES * MAX_NUMBER_OF_ACTUAL_DEPTH];
             int numberOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOne, moveArray, 0);
-            AtomicInteger sharedAlphaDepth = new AtomicInteger(sharedAlpha.get());
+            AtomicInteger sharedAlpha = new AtomicInteger(alpha);
 
             // Executor for parallelization
             ExecutorService executor = Executors.newFixedThreadPool(NUMBER_OF_THREADS);
@@ -323,6 +321,7 @@ public class AlphaBetaSearch {
                     if (currentMoveIndex >= numberOfMoves) break;  // No more moves to process
 
                     short move = moveArray[currentMoveIndex];
+                    int actualDepth = 0;
                     long[] boardCopy = board.clone();
                     long[] boardHistory = this.boardHistory.clone();
                     long zobristHash = Zobrist.updateHash(this.zobristHash, move, isPlayerOne);
@@ -330,7 +329,7 @@ public class AlphaBetaSearch {
                     updateBoardHistory(zobristHash, boardHistory, true, 0);
                     BitMapMoveGenerator.makeOrUnmakeMoveInPlace(boardCopy, move, isPlayerOne);
                     short[] childPV = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
-                    int value = -AlphaBeta(boardCopy, zobristHash, mirroredZobristHash, !isPlayerOne, iterativeDepth - 1, actualDepth + 1, boardHistory, 0, moveArray, -beta, -sharedAlphaDepth.get(), childPV);
+                    int value = -AlphaBeta(boardCopy, zobristHash, mirroredZobristHash, !isPlayerOne, iterativeDepth - 1, actualDepth + 1, boardHistory, 0, moveArray.clone(), -beta, -sharedAlpha.get(), childPV);
 
                     // Synchronize access to update alpha, bestScore, and bestBoard
                     synchronized (this) {
@@ -341,8 +340,8 @@ public class AlphaBetaSearch {
                             pvLine[actualDepth] = move;  // Update the principal variation
                             System.arraycopy(childPV, actualDepth + 1, pvLine, actualDepth + 1, MAX_NUMBER_OF_ACTUAL_DEPTH - actualDepth - 1);
                         }
-                        if (bestScore.get() > sharedAlphaDepth.get()) {
-                            sharedAlphaDepth.set(bestScore.get());
+                        if (bestScore.get() > sharedAlpha.get()) {
+                            sharedAlpha.set(bestScore.get());
                         }
                         if (bestScore.get() >= beta) {
                             break;  // Prune further searches
@@ -358,32 +357,51 @@ public class AlphaBetaSearch {
 
             // Wait for threads to complete
             executor.shutdown();
+
+            //Wait for Iteration to finish. If Iteration finishes succesfully the after Iteration Best move and Score is stored.
+            //When the last Iteration gets cancelled due to time. Check if you found a better Move and use that instead.
             try {
                 if (passedTime == 0) {
                     if (!executor.awaitTermination(maxTime, TimeUnit.NANOSECONDS)) {
+                        if (afterIterationBestScore < bestScore.get()) {
+                            afterIterationBestScore = bestScore.get();
+                            Long[] bestBoard = bestBoardRef.get();
+                            afterIterationBestBoard = new long[]{bestBoard[0], bestBoard[1], bestBoard[2], bestBoard[3]};
+                            afterIterationBestMove = (short) sharedBestMove.get();
+                        }
                         break;
+                    }
+                    {
+                        afterIterationBestScore = bestScore.get();
+                        afterIterationBestMove = (short) sharedBestMove.get();
+                        Long[] bestBoard = bestBoardRef.get();
+                        afterIterationBestBoard = new long[]{bestBoard[0], bestBoard[1], bestBoard[2], bestBoard[3]};
                     }
                 } else {
                     if (!executor.awaitTermination(maxTime - passedTime, TimeUnit.NANOSECONDS)) {
+                        if (afterIterationBestScore < bestScore.get()) {
+                            afterIterationBestScore = bestScore.get();
+                            afterIterationBestMove = (short) sharedBestMove.get();
+                            Long[] bestBoard = bestBoardRef.get();
+                            afterIterationBestBoard = new long[]{bestBoard[0], bestBoard[1], bestBoard[2], bestBoard[3]};
+                        }
                         break;
+                    } else {
+                        afterIterationBestScore = bestScore.get();
+                        afterIterationBestMove = (short) sharedBestMove.get();
+                        Long[] bestBoard = bestBoardRef.get();
+                        afterIterationBestBoard = new long[]{bestBoard[0], bestBoard[1], bestBoard[2], bestBoard[3]};
                     }
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
 
-            // Update alpha for next depth
-            sharedAlpha.set(sharedAlphaDepth.get());
-
             // Output results of the current depth
             System.out.println("Depth: " + depth + " completed. Best move: " + sharedBestMove.get() + " with score: " + bestScore.get());
             System.out.println("Principal Variation: " + Arrays.toString(Arrays.copyOfRange(pvLine, 0, depth)));
 
 
-            // Update best board and move sequence
-            if (bestBoardRef.get() != null) {
-                bestBoard = new long[]{bestBoardRef.get()[0], bestBoardRef.get()[1], bestBoardRef.get()[2], bestBoardRef.get()[3]};
-            }
             passedTime = System.nanoTime() - startTime;
         }
 
@@ -406,10 +424,10 @@ public class AlphaBetaSearch {
 
 
         // Update board history and return the best board found
-        zobristHash = Zobrist.updateHash(zobristHash, (short) sharedBestMove.get(), isPlayerOne);
-        mirroredZobristHash = Zobrist.updateHash(mirroredZobristHash, MoveConversion.getHorizontallyMirroredShort((short) sharedBestMove.get()), isPlayerOne);
-        updateBoardHistory(lastBoard, new BitmapFianco(bestBoard).convertBitmapTo2DIntArray(), isPlayerOne);
-        return (short) sharedBestMove.get();
+        zobristHash = Zobrist.updateHash(zobristHash, afterIterationBestMove, isPlayerOne);
+        mirroredZobristHash = Zobrist.updateHash(mirroredZobristHash, MoveConversion.getHorizontallyMirroredShort(afterIterationBestMove), isPlayerOne);
+        updateBoardHistory(lastBoard, new BitmapFianco(afterIterationBestBoard).convertBitmapTo2DIntArray(), isPlayerOne);
+        return afterIterationBestMove;
     }
 
 }
