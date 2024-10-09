@@ -130,6 +130,28 @@ public class BitMaskCreationHelper {
             {1, 1, 1, 1, 1, 1, 1, 1, 1},
             {1, 1, 1, 1, 1, 1, 1, 1, 1}};
 
+    public static final int[][] canBlockPlayer1Piece = new int[][]{
+            {1, 1, 1, 1, 1, 1, 1, 1, 1},
+            {1, 1, 1, 0, 0, 0, 1, 1, 1},
+            {1, 1, 0, 0, 0, 0, 0, 1, 1},
+            {1, 0, 0, 0, 0, 0, 0, 0, 1},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0}};
+
+    public static final int[][] canBlockPlayer2Piece = new int[][]{
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {1, 0, 0, 0, 0, 0, 0, 0, 1},
+            {1, 1, 0, 0, 0, 0, 0, 1, 1},
+            {1, 1, 1, 0, 0, 0, 1, 1, 1},
+            {1, 1, 1, 1, 1, 1, 1, 1, 1}};
+
 
     public static long[] getFreeTilesBitMask(long[] board1, long[] board2) {
         long[] combined = BasicBitOps.or(board1, board2);
@@ -204,6 +226,14 @@ public class BitMaskCreationHelper {
 
     public static long[] getCaptureNorthWestMask() {
         return turn2DIntArrayBitMaskToLongArray(captureNorthWestBitMask);
+    }
+
+    public static long[] getCanBlockPlayer1PieceMask() {
+        return turn2DIntArrayBitMaskToLongArray(canBlockPlayer1Piece);
+    }
+
+    public static long[] getCanBlockPlayer2PieceMask() {
+        return turn2DIntArrayBitMaskToLongArray(canBlockPlayer2Piece);
     }
 
 }

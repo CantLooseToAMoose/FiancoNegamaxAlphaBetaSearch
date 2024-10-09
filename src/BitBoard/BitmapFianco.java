@@ -44,6 +44,10 @@ public class BitmapFianco {
         return new long[]{this.board_full_2, this.board_partial_2};
     }
 
+    public long[] getFullBoard() {
+        return new long[]{this.board_full_1, this.board_partial_1, this.board_full_2, this.board_partial_2};
+    }
+
     public void setPlayer1Board(long[] player1Board) {
         this.board_full_1 = player1Board[0];
         this.board_partial_1 = player1Board[1];

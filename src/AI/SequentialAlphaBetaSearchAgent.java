@@ -5,7 +5,7 @@ import BitBoard.BitmapFianco;
 import BitBoard.MoveConversion;
 import FiancoGameEngine.Fianco;
 import FiancoGameEngine.MoveCommand;
-import search.SequentialAlphaBetaSearch;
+import search.AlphaBeta.SequentialAlphaBetaSearch;
 
 import java.util.ArrayList;
 

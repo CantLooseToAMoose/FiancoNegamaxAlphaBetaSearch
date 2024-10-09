@@ -1,9 +1,10 @@
-package search;
+package search.AlphaBeta;
 
 import BitBoard.BitMapMoveGenerator;
 import BitBoard.BitmapFianco;
 import BitBoard.MoveConversion;
 import FiancoGameEngine.MoveCommand;
+import search.Evaluation.Evaluate;
 import search.TT.TranspositionTable;
 import search.TT.TranspositionTableEntry;
 import search.TT.Zobrist;
@@ -93,7 +94,7 @@ public class SequentialAlphaBetaSearch {
         nodes.incrementAndGet();
         //Transposition Table
         int oldAlpha = alpha;
-        TranspositionTableEntry entry = TranspositionTable.retrieve(primaryTranspositionTable, transpositionTable, zobristHash, PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE);
+        TranspositionTableEntry entry = TranspositionTable.retrieve(primaryTranspositionTable, transpositionTable, zobristHash, PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE,depth);
         short ttMove = 0;
         boolean store = false;
         if (entry == null) {

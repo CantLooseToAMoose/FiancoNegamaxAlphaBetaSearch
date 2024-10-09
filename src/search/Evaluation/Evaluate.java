@@ -1,8 +1,6 @@
-package search;
+package search.Evaluation;
 
-import BitBoard.AdvancedBitOps;
 import BitBoard.BasicBitOps;
-import BitBoard.BitmapFianco;
 
 public class Evaluate {
 
@@ -75,6 +73,6 @@ public class Evaluate {
 
 
     public static int combinedEvaluate(long[] board, boolean isPlayerOne) {
-        return calculatePieceDifference(board, isPlayerOne);
+        return calculateWeightedPieceDifference(board, isPlayerOne) + 15 * calculatePieceDifference(board, isPlayerOne);
     }
 }

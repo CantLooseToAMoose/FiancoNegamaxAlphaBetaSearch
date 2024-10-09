@@ -37,6 +37,11 @@ public class BasicBitOps {
     public static final long[] CAPTURE_NORTH_WEST_MASK = BitMaskCreationHelper.getCaptureNorthWestMask();
 
 
+    //For evaluation or Quiescence
+    public static final long[] CAN_BLOCK_PLAYER_1_PIECE_MASK = BitMaskCreationHelper.getCanBlockPlayer1PieceMask();
+    public static final long[] CAN_BLOCK_PLAYER_2_PIECE_MASK = BitMaskCreationHelper.getCanBlockPlayer2PieceMask();
+
+
     public static long[] bitShiftL(long[] board, int shiftBy) {
         long[] shifted = new long[]{board[0] << shiftBy | board[1] >>> 64 - shiftBy, board[1] << shiftBy};
         return and(shifted, BIT_MAP_MASK);

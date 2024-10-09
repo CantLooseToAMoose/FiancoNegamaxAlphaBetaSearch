@@ -1,14 +1,13 @@
 package search.TT;
 
 public class TranspositionTable {
-
-    private final TranspositionTableEntry[] table;
-    private final int size;
-
-    public TranspositionTable(int size) {
-        this.size = size;
-        this.table = new TranspositionTableEntry[size];
-    }
+    //Transposition Table Sizes
+    public static final int PRIMARY_TRANSPOSITION_TABLE_SIZE = 16_384; //Needs to be really small to optimally fit completely in Cache
+    public static final int TRANSPOSITION_TABLE_SIZE_4GB = 134_217_728;//4 GB
+    public static final int TRANSPOSITION_TABLE_SIZE_16GB = 134_217_728 * 4; //16 GB
+    public static final int TRANSPOSITION_TABLE_SIZE_8GB = 134_217_728 * 2;//8 GB
+    public static final int TRANSPOSITION_TABLE_SIZE_2GB = 134_217_728 / 2;//2GB
+    public static final int TRANSPOSITION_TABLE_SIZE_1GB = 134_217_728 / 4;//1 GB;
 
     // Store a position in the transposition table
     public static void storeAlwaysNewOne(TranspositionTableEntry[] table, long hash, int size, int depth, int score, byte type, short bestMove) {
@@ -57,11 +56,27 @@ public class TranspositionTable {
         return table[index];
     }
 
-    public static TranspositionTableEntry retrieve(TranspositionTableEntry[] primaryTable, TranspositionTableEntry[] table, long hash, int primarySize, int size) {
-        TranspositionTableEntry entry = retrieve(primaryTable, hash, primarySize);
-        if (entry != null) {
-            if (entry.hash == hash) {
-                return entry;
+    public static TranspositionTableEntry retrieve(TranspositionTableEntry[] primaryTable, TranspositionTableEntry[] table, long hash, int primarySize, int size, int depth) {
+        //Retrieve primary Entry
+        TranspositionTableEntry primaryEntry = retrieve(primaryTable, hash, primarySize);
+        //Check if not null
+        if (primaryEntry != null) {
+            //if not null check if hash is correct
+            if (primaryEntry.hash != hash) {
+                return retrieve(table, hash, size);
+            }
+            //if correct check if the depth is bigger than search depth if so just return
+            if (primaryEntry.depth >= depth) {
+                return primaryEntry;
+            } else {
+                //if entry depth is smaller than search depth check if there is a better entry in the other transposition table
+                TranspositionTableEntry entry = retrieve(table, hash, size);
+                if (entry == null) {
+                    return retrieve(table, hash, size);
+                }
+                if (entry.hash == hash) {
+                    return primaryEntry.depth > entry.depth ? primaryEntry : entry;
+                }
             }
         }
         return retrieve(table, hash, size);

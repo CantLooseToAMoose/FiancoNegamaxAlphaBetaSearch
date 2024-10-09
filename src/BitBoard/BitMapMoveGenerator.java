@@ -1,10 +1,7 @@
 package BitBoard;
 
-import search.Evaluate;
-
-import java.util.ArrayDeque;
-import java.util.LinkedList;
-import java.util.Queue;
+import FiancoGameEngine.MoveCommand;
+import search.AlphaBeta.PVSWithQuiesAndKM;
 
 /**
  * A board is represented as a long[4] with the first two entries being the two longs used for the player1 Bitmap and the second two longs used for the player2 Bitmap
@@ -129,8 +126,8 @@ public class BitMapMoveGenerator {
 //        System.out.println("Can Move Forward:");
 //        BitmapFianco.ShowBitBoard(canMoveForward);
         movesAdded += populateShortArrayWithForwardMovesBoard(canMoveForward, isPlayerOne, moveArray, arrayOffset + movesAdded);
-        movesAdded += populateShortArrayWithSideMovesBoard(canMoveEast, false, moveArray, arrayOffset + movesAdded);
-        movesAdded += populateShortArrayWithSideMovesBoard(canMoveWest, true, moveArray, arrayOffset + movesAdded);
+        movesAdded += populateShortArrayWithSideMovesBoard(canMoveEast, isPlayerOne, false, moveArray, arrayOffset + movesAdded);
+        movesAdded += populateShortArrayWithSideMovesBoard(canMoveWest, isPlayerOne, true, moveArray, arrayOffset + movesAdded);
         return movesAdded;
 
     }
@@ -139,70 +136,137 @@ public class BitMapMoveGenerator {
     private static int populateShortArrayWithForwardMovesBoard(long[] movePieces, boolean isPlayerOne, short[] moves, int arrayOffset) {
         int movesAdded = 0;
         for (int i = 0; i < movePieces.length; i++) {
-            long temp = movePieces[i];
-            // Iterate through the set bits (pieces) in movePieces[i]
-            while (temp != 0) {
-                // Isolate the lowest set bit
-                int fromPosition;
-                if (i == 0) {
-                    fromPosition = 64 - Long.numberOfTrailingZeros(temp);  // For first part of the board (0-63)
-                } else if (i == 1) {
-                    fromPosition = 64 - Long.numberOfTrailingZeros(temp) + 64;  // For second part of the board (64-81)
-                } else {
-                    System.out.println("There is something wrong in the populateQueueWithForwardMovesBoard Function, don't trust it!");
-                    return movesAdded;  // Exit the function if something is wrong
+            long temp;
+            if (isPlayerOne) {
+                temp = movePieces[i == 0 ? 1 : 0];
+            } else {
+                temp = movePieces[i];
+            }
+
+            // For Player One: iterate from least significant bits
+            if (isPlayerOne) {
+                while (temp != 0) {
+                    // Isolate the lowest set bit
+                    int fromPosition;
+                    if (i == 1) {
+                        fromPosition = 64 - Long.numberOfTrailingZeros(temp);  // First part of the board (0-63)
+                    } else if (i == 0) {
+                        fromPosition = 64 - Long.numberOfTrailingZeros(temp) + 64;  // Second part of the board (64-127)
+                    } else {
+                        System.out.println("Error in populateQueueWithForwardMovesBoard Function!");
+                        return movesAdded;
+                    }
+
+                    // Move south (downwards)
+                    int toPosition = fromPosition + 9;
+
+                    // Pack and add the move
+                    short move = MoveConversion.pack(fromPosition, toPosition);
+                    moves[arrayOffset + movesAdded] = move;
+                    movesAdded++;
+
+                    // Flip the lowest set bit
+                    temp &= (temp - 1);
                 }
-                // Determine landing position based on the direction of movement
-                int toPosition;
-                if (isPlayerOne) {
-                    toPosition = fromPosition + 9;  // Move south (downwards)
-                } else {
-                    toPosition = fromPosition - 9;  // Move north (upwards)
+            }
+            // For Player Two: iterate from most significant bits
+            else {
+                while (temp != 0) {
+                    // Isolate the highest set bit
+                    int fromPosition;
+                    if (i == 0) {
+                        fromPosition = Long.numberOfLeadingZeros(temp) + 1;  // First part of the board (0-63)
+                    } else if (i == 1) {
+                        fromPosition = 65 + Long.numberOfLeadingZeros(temp);  // Second part of the board (64-127)
+                    } else {
+                        System.out.println("Error in populateQueueWithForwardMovesBoard Function!");
+                        return movesAdded;
+                    }
+
+                    // Move north (upwards)
+                    int toPosition = fromPosition - 9;
+
+                    // Pack and add the move
+                    short move = MoveConversion.pack(fromPosition, toPosition);
+                    moves[arrayOffset + movesAdded] = move;
+                    movesAdded++;
+
+                    // Flip the highest set bit using Long.highestOneBit
+                    temp &= ~(1L << (63 - Long.numberOfLeadingZeros(temp)));
                 }
-                // Pack the from and to positions into a short
-                short move = MoveConversion.pack(fromPosition, toPosition);
-                // Add the packed move to the queue
-                moves[arrayOffset + movesAdded] = move;
-                movesAdded++;
-                // Flip the lowest set bit to move on to the next piece
-                temp &= (temp - 1);
             }
         }
         return movesAdded;
     }
 
 
-    private static int populateShortArrayWithSideMovesBoard(long[] movePieces, boolean moveWest, short[] moves, int arrayOffset) {
+    private static int populateShortArrayWithSideMovesBoard(long[] movePieces, boolean isPlayerOne, boolean moveWest, short[] moves, int arrayOffset) {
         int movesAdded = 0;
         for (int i = 0; i < movePieces.length; i++) {
-            long temp = movePieces[i];
-            // Iterate through the set bits (pieces) in movePieces[i]
-            while (temp != 0) {
-                // Isolate the lowest set bit and get the fromPosition
-                int fromPosition;
-                if (i == 0) {
-                    fromPosition = 64 - Long.numberOfTrailingZeros(temp);  // For the first part of the board (0-63)
-                } else if (i == 1) {
-                    fromPosition = 64 - Long.numberOfTrailingZeros(temp) + 64;  // For the second part of the board (64-81)
-                } else {
-                    System.out.println("There is something wrong in the populateQueueWithSideMovesBoard Function, don't trust it!");
-                    return movesAdded;  // Exit the function if something is wrong
-                }
-                // Determine landing position based on whether moving west or east
-                int toPosition;
-                if (moveWest) {
-                    toPosition = fromPosition - 1;  // Move west (left)
-                } else {
-                    toPosition = fromPosition + 1;  // Move east (right)
-                }
-                // Pack the from and to positions into a short
-                short move = MoveConversion.pack(fromPosition, toPosition);
-                // Add the packed move to the queue
-                moves[arrayOffset + movesAdded] = move;
-                movesAdded++;
-                // Flip the lowest set bit to move on to the next piece
-                temp &= (temp - 1);
+            long temp;
+            if (isPlayerOne) {
+                temp = movePieces[i == 0 ? 1 : 0];
+            } else {
+                temp = movePieces[i];
             }
+            if (isPlayerOne) {
+                // Iterate through the set bits (pieces) in movePieces[i]
+                while (temp != 0) {
+                    // Isolate the lowest set bit and get the fromPosition
+                    int fromPosition;
+                    if (i == 1) {
+                        fromPosition = 64 - Long.numberOfTrailingZeros(temp);  // For the first part of the board (0-63)
+                    } else if (i == 0) {
+                        fromPosition = 64 - Long.numberOfTrailingZeros(temp) + 64;  // For the second part of the board (64-81)
+                    } else {
+                        System.out.println("There is something wrong in the populateQueueWithSideMovesBoard Function, don't trust it!");
+                        return movesAdded;  // Exit the function if something is wrong
+                    }
+                    // Determine landing position based on whether moving west or east
+                    int toPosition;
+                    if (moveWest) {
+                        toPosition = fromPosition - 1;  // Move west (left)
+                    } else {
+                        toPosition = fromPosition + 1;  // Move east (right)
+                    }
+                    // Pack the from and to positions into a short
+                    short move = MoveConversion.pack(fromPosition, toPosition);
+                    // Add the packed move to the queue
+                    moves[arrayOffset + movesAdded] = move;
+                    movesAdded++;
+                    // Flip the lowest set bit to move on to the next piece
+                    temp &= (temp - 1);
+                }
+            } else {
+                // Iterate through the set bits (pieces) in movePieces[i]
+                while (temp != 0) {
+                    // Isolate the lowest set bit and get the fromPosition
+                    int fromPosition;
+                    if (i == 0) {
+                        fromPosition = Long.numberOfLeadingZeros(temp) + 1;  // First part of the board (0-63)
+                    } else if (i == 1) {
+                        fromPosition = 65 + Long.numberOfLeadingZeros(temp);  // Second part of the board (64-127)
+                    } else {
+                        System.out.println("Error in populateQueueWithForwardMovesBoard Function!");
+                        return movesAdded;
+                    }
+                    // Determine landing position based on whether moving west or east
+                    int toPosition;
+                    if (moveWest) {
+                        toPosition = fromPosition - 1;  // Move west (left)
+                    } else {
+                        toPosition = fromPosition + 1;  // Move east (right)
+                    }
+                    // Pack the from and to positions into a short
+                    short move = MoveConversion.pack(fromPosition, toPosition);
+                    // Add the packed move to the queue
+                    moves[arrayOffset + movesAdded] = move;
+                    movesAdded++;
+                    // Flip the highest set bit using Long.highestOneBit
+                    temp &= ~(1L << (63 - Long.numberOfLeadingZeros(temp)));
+                }
+            }
+
         }
         return movesAdded;
     }
@@ -329,9 +393,9 @@ public class BitMapMoveGenerator {
                 checkIfFromPositionIsFilled = board[0] & (1L << 64 - fromPosition);
             }
             if (toPosition > 64) {
-                checkIfToPositionIsNotFilled = board[1] & (1L << 64 - toPosition + 64);
+                checkIfToPositionIsNotFilled = (board[1] | board[3]) & (1L << 64 - toPosition + 64);
             } else {
-                checkIfToPositionIsNotFilled = board[0] & (1L << 64 - toPosition);
+                checkIfToPositionIsNotFilled = (board[0] | board[2]) & (1L << 64 - toPosition);
             }
             if (temp != 0) {
                 if (temp > 64) {
@@ -347,9 +411,9 @@ public class BitMapMoveGenerator {
                 checkIfFromPositionIsFilled = board[2] & (1L << 64 - fromPosition);
             }
             if (toPosition > 64) {
-                checkIfToPositionIsNotFilled = board[3] & (1L << 64 - toPosition + 64);
+                checkIfToPositionIsNotFilled = (board[3] | board[1]) & (1L << 64 - toPosition + 64);
             } else {
-                checkIfToPositionIsNotFilled = board[2] & (1L << 64 - toPosition);
+                checkIfToPositionIsNotFilled = (board[2] | board[0]) & (1L << 64 - toPosition);
             }
             if (temp != 0) {
                 if (temp > 64) {
@@ -360,5 +424,74 @@ public class BitMapMoveGenerator {
             }
         }
         return Long.bitCount(checkIfFromPositionIsFilled) == 1 && checkIfToPositionIsNotFilled == 0 && Long.bitCount(checkIfCapturePositionIsFilled) == 1;
+    }
+
+
+    public static boolean checkIfConversionMove(short move) {
+        int from = MoveConversion.unpackFirstNumber(move);
+        int diff = from - MoveConversion.unpackSecondNumber(move);
+        switch (diff) {
+            case 1:
+                switch (from) {
+                    case 10, 19, 28, 37, 46, 55, 64, 73:
+                        return true;
+                }
+            case -1:
+                switch (from) {
+                    case 9, 18, 27, 36, 45, 54, 63, 72:
+                        return true;
+                }
+        }
+        if (diff > 1) {
+            return true;
+        } else if (diff < -1) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static boolean isCaptureMove(short move) {
+        int diff = MoveConversion.unpackFirstNumber(move) - MoveConversion.unpackSecondNumber(move);
+        return diff > 9 || diff < -9;
+    }
+
+    public static void main(String[] args) {
+        short[] possibleP1Moves = new short[300];
+        short[] possibleP2Moves = new short[300];
+        int[][] boardState = new int[][]{
+                {1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {0, 1, 0, 0, 0, 0, 0, 1, 0},
+                {0, 0, 1, 0, 0, 0, 1, 0, 0},
+                {0, 0, 0, 1, 0, 1, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 2, 0, 2, 0, 0, 0},
+                {0, 0, 2, 0, 0, 0, 2, 0, 0},
+                {0, 2, 0, 0, 0, 0, 0, 2, 0},
+                {2, 2, 2, 2, 2, 2, 2, 2, 2}};
+
+        BitmapFianco bitmapFianco = new BitmapFianco();
+        bitmapFianco.populateBoardBitmapsFrom2DIntArray(boardState);
+        long[] board = bitmapFianco.getFullBoard();
+        System.out.println(bitmapFianco);
+        populateShortArrayWithAllPossibleMoves(board, true, possibleP1Moves, 0);
+        populateShortArrayWithAllPossibleMoves(board, false, possibleP2Moves, 0);
+        System.out.println("Show all Possible Player 1 Moves ");
+        printPossibleMoves(possibleP1Moves, 30, true);
+        System.out.println("Show all Possible Player 2 Moves ");
+        printPossibleMoves(possibleP2Moves, 30, false);
+
+    }
+
+    public static void printPossibleMoves(short[] pvLine, int depth, boolean isPlayerOne) {
+        for (int i = 0; i < depth; i++) {
+            short move = pvLine[i];
+            if (move != 0) {
+                MoveCommand moveCommand = MoveConversion.getMoveCommandFromShortMove(move, isPlayerOne);
+                System.out.print(moveCommand + "; ");
+            } else {
+                System.out.print(move + "; ");
+            }
+        }
     }
 }

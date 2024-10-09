@@ -1,9 +1,6 @@
 package ServerStructure;
 
-import AI.IAgent;
-import AI.IterativeAlphaBetaSearchAgent;
-import AI.RandomFiancoAgent;
-import AI.SequentialAlphaBetaSearchAgent;
+import AI.*;
 import BitBoard.BitmapFianco;
 import FiancoGameEngine.Fianco;
 import FiancoGameEngine.MoveCommand;
@@ -42,7 +39,7 @@ public class GameClient {
                     String moveCommandString = serverMessage.substring(movePrefix.length()); //Get only the Boardstate from Message
                     MoveCommand moveCommand = MessageLib.convertMoveCommandStringToMoveCommand(moveCommandString);// Convert to right Datatype
                     String move = MessageLib.convertMoveCommandToString(aiAgent.generateMove(moveCommand)); // AI logic to choose a move from
-                    System.out.println("Send Board back to Server");
+                    System.out.println("Send Move back to Server");
                     out.write(move + "\n");
                     out.flush(); // Send new Boardstate
                 } else if (serverMessage.startsWith(undoPrefix)) {
@@ -50,9 +47,12 @@ public class GameClient {
                 } else if (serverMessage.startsWith(restartPrefix)) {
                     aiAgent.resetBoard();
                 }
+                Thread.sleep(50);
             }
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -77,6 +77,12 @@ public class GameClient {
             aiAgent = new SequentialAlphaBetaSearchAgent(bitmapFianco, Integer.parseInt(args[1]));
         } else if (whichAi == 3) {
             aiAgent = new IterativeAlphaBetaSearchAgent(bitmapFianco, Integer.parseInt(args[1]));
+        } else if (whichAi == 4) {
+            aiAgent = new IterativeAlphaBetaSearchAgentQuiescence(bitmapFianco, Integer.parseInt(args[1]));
+        } else if (whichAi == 5) {
+            aiAgent = new IterativeAlphaBetaSearchAgentQuiescenceAndKillerMoves(bitmapFianco, Integer.parseInt(args[1]));
+        } else if (whichAi == 6) {
+            aiAgent = new PVSWithQuiescAndKMAndPonderingAgent(bitmapFianco, Integer.parseInt(args[1]));
         }
         GameClient client = new GameClient("localhost", 12345, args[0], aiAgent);
         client.start();
