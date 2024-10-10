@@ -16,8 +16,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
-//TODO: Can you think on opponents turn?
-
 public class PVSWithQuiesAndKM {
     //Constants
     //
@@ -60,8 +58,8 @@ public class PVSWithQuiesAndKM {
 
     //Pondering
     public int lastIterationDepth = 0;
-    private boolean stopSoft=false;
-    private boolean stopHard=false;
+    private boolean stopSoft = false;
+    private boolean stopHard = false;
     public short afterIterationBestMove;
 
 
@@ -304,9 +302,10 @@ public class PVSWithQuiesAndKM {
             this.previousPVLine = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
             afterIterationBestMove = moveArray[0];
             afterIterationBestPVLine = previousPVLine.clone();
-            TranspositionTableEntry entry = TranspositionTable.retrieve(primaryTranspositionTable, transpositionTable, zobristHash, TranspositionTable.PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, minDepth);
+            TranspositionTableEntry entry = TranspositionTable.retrieve(primaryTranspositionTable, transpositionTable, Zobrist.updateHash(zobristHash, afterIterationBestMove, isPlayerOne), TranspositionTable.PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, minDepth);
             if (entry != null) {
-                afterIterationBestPVLine[0] = entry.bestMove;
+                afterIterationBestPVLine[0] = afterIterationBestMove;
+                afterIterationBestPVLine[1] = entry.bestMove;
             }
             return moveArray[0];
         }
