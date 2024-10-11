@@ -94,7 +94,7 @@ public class SequentialAlphaBetaSearch {
         nodes.incrementAndGet();
         //Transposition Table
         int oldAlpha = alpha;
-        TranspositionTableEntry entry = TranspositionTable.retrieve(primaryTranspositionTable, transpositionTable, zobristHash, PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE,depth);
+        TranspositionTableEntry entry = TranspositionTable.retrieve(primaryTranspositionTable, transpositionTable, zobristHash, PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, depth);
         short ttMove = 0;
         boolean store = false;
         if (entry == null) {
@@ -124,7 +124,7 @@ public class SequentialAlphaBetaSearch {
             }
         }
         //Populate Move array
-        int numberOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOneTurn, moveArray, actualDepth * MAX_NUMBER_OF_MOVES);
+        int maxNumberOfMovesForAllTypesOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOneTurn, moveArray, actualDepth * MAX_NUMBER_OF_MOVES);
         int win = Evaluate.evaluateWin(board, isPlayerOneTurn);
         //Check for win
         if (win != 0) {
@@ -135,7 +135,7 @@ public class SequentialAlphaBetaSearch {
             return Evaluate.combinedEvaluate(board, isPlayerOneTurn);
         }
         //Check for no more moves
-        if (numberOfMoves == 0) {
+        if (maxNumberOfMovesForAllTypesOfMoves == 0) {
             return -(WIN_EVAL + depth);
         }
         //Check for draw
@@ -153,7 +153,7 @@ public class SequentialAlphaBetaSearch {
 
 
         int score = -Integer.MAX_VALUE;
-        for (int i = -1; i < numberOfMoves; i++) {
+        for (int i = -1; i < maxNumberOfMovesForAllTypesOfMoves * 5; i++) {
             short move;
             // try out transposition table move first
             if (i == -1) {
@@ -166,7 +166,7 @@ public class SequentialAlphaBetaSearch {
                 move = moveArray[actualDepth * MAX_NUMBER_OF_MOVES + i];
             }
             //dont search for the ttMove again
-            if (move == ttMove) {
+            if (move == ttMove || move == 0 || !BitMapMoveGenerator.isMoveValid(board, move, isPlayerOneTurn)) {
                 continue;
             }
             //Do Move and add to history
@@ -222,9 +222,12 @@ public class SequentialAlphaBetaSearch {
         short bestMove = 0;
         int bestScore = -Integer.MAX_VALUE;
         //Populating move array
-        int numberOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOne, moveArray, actualDepth);
-        for (int i = 0; i < numberOfMoves; i++) {
+        int maxNumberOfMovesForAllTypesOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOne, moveArray, actualDepth);
+        for (int i = 0; i < maxNumberOfMovesForAllTypesOfMoves * 5; i++) {
             short move = moveArray[i];
+            if (move == 0) {
+                continue;
+            }
             //Doing move and adding the new board state to the history
             updateBoardHistory(move, true, 0, isPlayerOne);
             BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, move, isPlayerOne);

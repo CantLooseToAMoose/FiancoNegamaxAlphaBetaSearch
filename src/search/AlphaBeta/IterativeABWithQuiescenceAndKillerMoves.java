@@ -26,7 +26,7 @@ public class IterativeABWithQuiescenceAndKillerMoves {
     public static final int MAX_NUMBER_OF_MOVES_SINCE_LAST_CONVERSION = 15;
 
     private static final int PRIMARY_TRANSPOSITION_TABLE_SIZE = TranspositionTable.PRIMARY_TRANSPOSITION_TABLE_SIZE;
-    private static final int TRANSPOSITION_TABLE_SIZE = TranspositionTable.TRANSPOSITION_TABLE_SIZE_4GB;
+    private static final int TRANSPOSITION_TABLE_SIZE = TranspositionTable.TRANSPOSITION_TABLE_SIZE_2GB;
 
     //Parralelization
     public static final int NUMBER_OF_THREADS = 2;
@@ -105,9 +105,9 @@ public class IterativeABWithQuiescenceAndKillerMoves {
         if (win != 0) {
             return (WIN_EVAL + depth) * win;
         }
-        int numberOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOneTurn, moveArray, actualDepth * MAX_NUMBER_OF_MOVES);
+        int maxNumberOfMovesForAllTypesOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOneTurn, moveArray, actualDepth * MAX_NUMBER_OF_MOVES);
         //Check for no more moves
-        if (numberOfMoves == 0) {
+        if (maxNumberOfMovesForAllTypesOfMoves == 0) {
             return -(WIN_EVAL + depth);
         }
         //Check for draw
@@ -124,7 +124,7 @@ public class IterativeABWithQuiescenceAndKillerMoves {
         // Check for no more depth
         boolean quiescence = false;
         if (depth == 0) {
-            if (!(numberOfMoves < 4)) {
+            if (!(maxNumberOfMovesForAllTypesOfMoves < 4)) {
                 return Evaluate.combinedEvaluate(board, isPlayerOneTurn);
             } else {
                 depth++;
@@ -136,7 +136,7 @@ public class IterativeABWithQuiescenceAndKillerMoves {
         short killerMove1 = killerMoves[actualDepth][0];
         short killerMove2 = killerMoves[actualDepth][1];
         int score = -Integer.MAX_VALUE;
-        for (int i = -4; i < numberOfMoves; i++) {
+        for (int i = -4; i < maxNumberOfMovesForAllTypesOfMoves * 5; i++) {
             short move;
             // try out transposition table move first
             switch (i) {
@@ -168,7 +168,7 @@ public class IterativeABWithQuiescenceAndKillerMoves {
                     //get Move from move Array
                     move = moveArray[actualDepth * MAX_NUMBER_OF_MOVES + i];
                     //dont search for the ttMove again
-                    if (move == ttMove || move == pvLineMove || move == killerMove1 || move == killerMove2) {
+                    if (move == 0 || move == ttMove || move == pvLineMove || move == killerMove1 || move == killerMove2 || !BitMapMoveGenerator.isMoveValid(board, move, isPlayerOneTurn)) {
                         continue;
                     }
                     if (!BitMapMoveGenerator.isMoveValid(board, move, isPlayerOneTurn)) {
@@ -275,10 +275,15 @@ public class IterativeABWithQuiescenceAndKillerMoves {
 
 
         short[] moveArray = new short[MAX_NUMBER_OF_MOVES * MAX_NUMBER_OF_ACTUAL_DEPTH];
-        int numberOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOne, moveArray, 0);
+        int maxNumberOfMovesForAllTypesOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOne, moveArray, 0);
         this.killerMoves = new short[MAX_NUMBER_OF_ACTUAL_DEPTH][2];
-        if (numberOfMoves == 1) {
-            return moveArray[0];
+        if (maxNumberOfMovesForAllTypesOfMoves == 1) {
+            if (moveArray[0] != 0) {
+                return moveArray[0];
+            }
+            if (moveArray[1] != 0) {
+                return moveArray[1];
+            }
         }
 
         for (int depth = 1; depth <= maxDepth; depth++) {
@@ -302,7 +307,8 @@ public class IterativeABWithQuiescenceAndKillerMoves {
                 try {
                     while (true) {
                         int currentMoveIndex = moveIndex.getAndIncrement();  // Atomically get next move
-                        if (currentMoveIndex >= numberOfMoves) break;  // No more moves to process
+                        if (currentMoveIndex >= maxNumberOfMovesForAllTypesOfMoves)
+                            break;  // No more moves to process
                         short move;
                         if (currentMoveIndex == -1) {
                             move = pvLine[actualDepth];
@@ -311,6 +317,9 @@ public class IterativeABWithQuiescenceAndKillerMoves {
                             }
                         } else {
                             move = moveArray[currentMoveIndex];
+                            if (move == 0) {
+                                continue;
+                            }
                         }
                         long[] boardCopy = board.clone();
                         long[] boardHistoryClone = this.boardHistory.clone();

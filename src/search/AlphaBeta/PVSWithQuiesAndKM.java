@@ -16,6 +16,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
+//TODO: Can you think on opponents turn?
+
 public class PVSWithQuiesAndKM {
     //Constants
     //
@@ -24,7 +26,7 @@ public class PVSWithQuiesAndKM {
     public static final int MAX_NUMBER_OF_MOVES_SINCE_LAST_CONVERSION = 15;
 
     private static final int PRIMARY_TRANSPOSITION_TABLE_SIZE = TranspositionTable.PRIMARY_TRANSPOSITION_TABLE_SIZE;
-    private static final int TRANSPOSITION_TABLE_SIZE = TranspositionTable.TRANSPOSITION_TABLE_SIZE_4GB;
+    private static final int TRANSPOSITION_TABLE_SIZE = TranspositionTable.TRANSPOSITION_TABLE_SIZE_2GB;
 
     //Parralelization
     public static final int NUMBER_OF_THREADS = 2;
@@ -116,9 +118,9 @@ public class PVSWithQuiesAndKM {
         if (win != 0) {
             return (WIN_EVAL + depth) * win;
         }
-        int numberOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOneTurn, moveArray, actualDepth * MAX_NUMBER_OF_MOVES);
+        int maxNumberOfMovesForAllTypes = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOneTurn, moveArray, actualDepth * MAX_NUMBER_OF_MOVES);
         //Check for no more moves
-        if (numberOfMoves == 0) {
+        if (maxNumberOfMovesForAllTypes == 0) {
             return -(WIN_EVAL + depth);
         }
         //Check for draw
@@ -135,7 +137,7 @@ public class PVSWithQuiesAndKM {
         // Check for no more depth
         boolean quiescence = false;
         if (depth == 0) {
-            if (!(numberOfMoves < 4)) {
+            if (!(maxNumberOfMovesForAllTypes < 4)) {
                 return Evaluate.combinedEvaluate(board, isPlayerOneTurn);
             } else {
                 depth++;
@@ -145,13 +147,12 @@ public class PVSWithQuiesAndKM {
         short bestMove = 0;
         // PVS Stuff
         short pvLineMove = pvLine[actualDepth];
-        boolean PVS = false;
-        int lBound = -Integer.MAX_VALUE;
-        int uBound = Integer.MAX_VALUE;
+        int lBound;
+        int uBound;
         short killerMove1 = killerMoves[actualDepth][0];
         short killerMove2 = killerMoves[actualDepth][1];
         int score = -Integer.MAX_VALUE;
-        for (int i = -4; i < numberOfMoves; i++) {
+        for (int i = -4; i < maxNumberOfMovesForAllTypes * 5; i++) {
             short move;
             // try out transposition table move first
             switch (i) {
@@ -166,7 +167,6 @@ public class PVSWithQuiesAndKM {
                     if (move == 0 || move == ttMove || !BitMapMoveGenerator.isMoveValid(board, move, isPlayerOneTurn)) {
                         continue;
                     }
-                    PVS = true;
                 }
                 case -2 -> {
                     move = killerMove1;
@@ -184,13 +184,7 @@ public class PVSWithQuiesAndKM {
                     //get Move from move Array
                     move = moveArray[actualDepth * MAX_NUMBER_OF_MOVES + i];
                     //dont search for the ttMove again
-                    if (move == ttMove || move == pvLineMove || move == killerMove1 || move == killerMove2) {
-                        continue;
-                    }
-                    if (!BitMapMoveGenerator.isMoveValid(board, move, isPlayerOneTurn)) {
-                        System.out.println("Invalid move got generated");
-                        BitmapFianco.ShowBitBoard(board);
-                        System.out.println(MoveConversion.getMoveCommandFromShortMove(move, isPlayerOneTurn));
+                    if (move == 0 || move == ttMove || move == pvLineMove || move == killerMove1 || move == killerMove2 || !BitMapMoveGenerator.isMoveValid(board, move, isPlayerOneTurn)) {
                         continue;
                     }
                 }
@@ -210,7 +204,7 @@ public class PVSWithQuiesAndKM {
             short[] childPV = pvLine.clone();
             int value;
             //If PVS then search with smaller window first
-            if (PVS && i > -4) {
+            if (score != -Integer.MAX_VALUE && i > -4) {
                 lBound = Math.max(score, alpha);
                 uBound = lBound + 1;
                 value = -AlphaBeta(board, zobristHash, !isPlayerOneTurn, depth - 1, actualDepth + 1, boardHistory, gameMoves, lastConversionMove, moveArray, -uBound, -lBound, childPV);
@@ -296,9 +290,32 @@ public class PVSWithQuiesAndKM {
 
 
         short[] moveArray = new short[MAX_NUMBER_OF_MOVES * MAX_NUMBER_OF_ACTUAL_DEPTH];
-        int numberOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOne, moveArray, 0);
+        int maxNumberOfMovesForAllMoveTypes = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOne, moveArray, 0);
         this.killerMoves = new short[MAX_NUMBER_OF_ACTUAL_DEPTH][2];
-        if (numberOfMoves == 1) {
+        if (maxNumberOfMovesForAllMoveTypes == 1) {
+            if (moveArray[0] != 0) {
+                this.previousPVLine = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
+                afterIterationBestMove = moveArray[0];
+                afterIterationBestPVLine = previousPVLine.clone();
+                TranspositionTableEntry entry = TranspositionTable.retrieve(primaryTranspositionTable, transpositionTable, Zobrist.updateHash(zobristHash, afterIterationBestMove, isPlayerOne), TranspositionTable.PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, minDepth);
+                if (entry != null) {
+                    afterIterationBestPVLine[0] = afterIterationBestMove;
+                    afterIterationBestPVLine[1] = entry.bestMove;
+                }
+                return moveArray[0];
+            }
+            if (moveArray[1] != 0) {
+                this.previousPVLine = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
+                afterIterationBestMove = moveArray[1];
+                afterIterationBestPVLine = previousPVLine.clone();
+                TranspositionTableEntry entry = TranspositionTable.retrieve(primaryTranspositionTable, transpositionTable, Zobrist.updateHash(zobristHash, afterIterationBestMove, isPlayerOne), TranspositionTable.PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, minDepth);
+                if (entry != null) {
+                    afterIterationBestPVLine[0] = afterIterationBestMove;
+                    afterIterationBestPVLine[1] = entry.bestMove;
+                }
+                return moveArray[1];
+            }
+
             this.previousPVLine = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
             afterIterationBestMove = moveArray[0];
             afterIterationBestPVLine = previousPVLine.clone();
@@ -337,7 +354,7 @@ public class PVSWithQuiesAndKM {
                             break;
                         }
                         int currentMoveIndex = moveIndex.getAndIncrement();  // Atomically get next move
-                        if (currentMoveIndex >= numberOfMoves) break;  // No more moves to process
+                        if (currentMoveIndex >= maxNumberOfMovesForAllMoveTypes * 5) break;  // No more moves to process
                         short move;
                         if (currentMoveIndex == -1) {
                             move = pvLine[actualDepth];
@@ -346,6 +363,9 @@ public class PVSWithQuiesAndKM {
                             }
                         } else {
                             move = moveArray[currentMoveIndex];
+                            if (move == 0) {
+                                continue;
+                            }
                         }
                         long[] boardCopy = board.clone();
                         long[] boardHistoryClone = this.boardHistory.clone();

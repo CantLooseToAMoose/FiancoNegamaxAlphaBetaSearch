@@ -168,9 +168,9 @@ public class AlphaBetaSearch {
         if (win != 0) {
             return (WIN_EVAL + depth) * win;
         }
-        int numberOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOneTurn, moveArray, actualDepth * MAX_NUMBER_OF_MOVES);
+        int maxNumberOfMovesForAllTypeOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOneTurn, moveArray, actualDepth * MAX_NUMBER_OF_MOVES);
         //Check for no more moves
-        if (numberOfMoves == 0) {
+        if (maxNumberOfMovesForAllTypeOfMoves == 0) {
             return -(WIN_EVAL + depth);
         }
         //Check for draw
@@ -191,7 +191,7 @@ public class AlphaBetaSearch {
         short bestMove = 0;
 
         int score = -Integer.MAX_VALUE;
-        for (int i = -2; i < numberOfMoves; i++) {
+        for (int i = -2; i < maxNumberOfMovesForAllTypeOfMoves * 5; i++) {
             short move;
 
             // try out transposition table move first
@@ -213,13 +213,8 @@ public class AlphaBetaSearch {
                 //get Move from move Array
                 move = moveArray[actualDepth * MAX_NUMBER_OF_MOVES + i];
                 //dont search for the ttMove again
-                if (move == ttMove || move == pvLine[actualDepth]) {
+                if (move == 0 || move == ttMove || move == pvLine[actualDepth] || !BitMapMoveGenerator.isMoveValid(board, move, isPlayerOneTurn)) {
                     continue;
-                }
-                if (!BitMapMoveGenerator.isMoveValid(board, move, isPlayerOneTurn)) {
-                    System.out.println("Invalid move got generated");
-                    BitmapFianco.ShowBitBoard(board);
-                    System.out.println(MoveConversion.getMoveCommandFromShortMove(move, isPlayerOneTurn));
                 }
             }
             //Do Move and add to history
@@ -326,7 +321,7 @@ public class AlphaBetaSearch {
             AtomicReference<Long[]> bestBoardRef = new AtomicReference<>(null);
             AtomicInteger moveIndex = new AtomicInteger(0);  // Track move index for parallel threads
             short[] moveArray = new short[MAX_NUMBER_OF_MOVES * MAX_NUMBER_OF_ACTUAL_DEPTH];
-            int numberOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOne, moveArray, 0);
+            int maxNumberOfMovesForAllTypesOfMoves = BitMapMoveGenerator.populateShortArrayWithAllPossibleMoves(board, isPlayerOne, moveArray, 0);
             AtomicInteger sharedAlpha = new AtomicInteger(alpha);
 
             // Executor for parallelization
@@ -337,9 +332,13 @@ public class AlphaBetaSearch {
                 try {
                     while (true) {
                         int currentMoveIndex = moveIndex.getAndIncrement();  // Atomically get next move
-                        if (currentMoveIndex >= numberOfMoves) break;  // No more moves to process
+                        if (currentMoveIndex >= maxNumberOfMovesForAllTypesOfMoves * 5)
+                            break;  // No more moves to process
 
                         short move = moveArray[currentMoveIndex];
+                        if (move == 0) {
+                            continue;
+                        }
                         int actualDepth = 0;
                         long[] boardCopy = board.clone();
                         long[] boardHistory = this.boardHistory.clone();

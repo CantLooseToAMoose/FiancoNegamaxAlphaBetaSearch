@@ -12,7 +12,7 @@ public class BitMapMoveGenerator {
 
 
     private static int populateShortArrayWithCaptureMoves(long[] board, boolean isPlayerOne, short[] moveArray, int arrayDepthOffset) {
-        int movesAdded = 0;
+        int maxMovesAdded = 0;
         long[] playerBoard;
         long[] opponentBoard;
         if (isPlayerOne) {
@@ -33,14 +33,14 @@ public class BitMapMoveGenerator {
             capturePiecesEast = AdvancedBitOps.fasterPossibleNorthEastMovePieces(playerBoard, opponentBoard, freeTileBitMask);
             capturePiecesWest = AdvancedBitOps.fasterPossibleNorthWestMovePieces(playerBoard, opponentBoard, freeTileBitMask);
         }
-        movesAdded += populateShortArrayWithCapturePiecesBoard(capturePiecesEast, isPlayerOne, false, moveArray, arrayDepthOffset, movesAdded);
+        maxMovesAdded = Math.max(maxMovesAdded, populateShortArrayWithCapturePiecesBoard(capturePiecesEast, isPlayerOne, false, moveArray, arrayDepthOffset));
 
-        movesAdded += populateShortArrayWithCapturePiecesBoard(capturePiecesWest, isPlayerOne, true, moveArray, arrayDepthOffset, movesAdded);
-        return movesAdded;
+        maxMovesAdded = Math.max(maxMovesAdded, populateShortArrayWithCapturePiecesBoard(capturePiecesWest, isPlayerOne, true, moveArray, arrayDepthOffset));
+        return maxMovesAdded;
     }
 
 
-    private static int populateShortArrayWithCapturePiecesBoard(long[] capturePieces, boolean isPlayerOne, boolean captureWest, short[] moves, int arrayDepthOffset, int arrayMoveOffset) {
+    private static int populateShortArrayWithCapturePiecesBoard(long[] capturePieces, boolean isPlayerOne, boolean captureWest, short[] moves, int arrayDepthOffset) {
         int movesAdded = 0;
         for (int i = 0; i < capturePieces.length; i++) {
             long temp = capturePieces[i];
@@ -82,8 +82,11 @@ public class BitMapMoveGenerator {
                     // Pack the fromPosition and landingPosition into a short
                     short move = MoveConversion.pack(fromPosition, landingPosition);
                     // Add the packed move to the queue
-
-                    moves[arrayDepthOffset + arrayMoveOffset + movesAdded] = move;
+                    if (captureWest) {
+                        moves[arrayDepthOffset + movesAdded * 5] = move;
+                    } else {
+                        moves[arrayDepthOffset + movesAdded * 5 + 1] = move;
+                    }
                     movesAdded++;
                 }
                 // Flip the lowest set bit to move on to the next piece
@@ -95,7 +98,7 @@ public class BitMapMoveGenerator {
 
 
     private static int populateShortArrayWithQuietMoves(long[] board, short[] moveArray, boolean isPlayerOne, int arrayOffset) {
-        int movesAdded = 0;
+        int maxMovesAdded = 0;
         long[] playerBoard;
         long[] opponentBoard;
         if (isPlayerOne) {
@@ -125,10 +128,10 @@ public class BitMapMoveGenerator {
         }
 //        System.out.println("Can Move Forward:");
 //        BitmapFianco.ShowBitBoard(canMoveForward);
-        movesAdded += populateShortArrayWithForwardMovesBoard(canMoveForward, isPlayerOne, moveArray, arrayOffset + movesAdded);
-        movesAdded += populateShortArrayWithSideMovesBoard(canMoveEast, isPlayerOne, false, moveArray, arrayOffset + movesAdded);
-        movesAdded += populateShortArrayWithSideMovesBoard(canMoveWest, isPlayerOne, true, moveArray, arrayOffset + movesAdded);
-        return movesAdded;
+        maxMovesAdded = Math.max(maxMovesAdded, populateShortArrayWithForwardMovesBoard(canMoveForward, isPlayerOne, moveArray, arrayOffset));
+        maxMovesAdded = Math.max(maxMovesAdded, populateShortArrayWithSideMovesBoard(canMoveEast, isPlayerOne, false, moveArray, arrayOffset));
+        maxMovesAdded = Math.max(maxMovesAdded, populateShortArrayWithSideMovesBoard(canMoveWest, isPlayerOne, true, moveArray, arrayOffset));
+        return maxMovesAdded;
 
     }
 
@@ -162,7 +165,7 @@ public class BitMapMoveGenerator {
 
                     // Pack and add the move
                     short move = MoveConversion.pack(fromPosition, toPosition);
-                    moves[arrayOffset + movesAdded] = move;
+                    moves[arrayOffset + movesAdded * 5 + 2] = move;
                     movesAdded++;
 
                     // Flip the lowest set bit
@@ -188,7 +191,7 @@ public class BitMapMoveGenerator {
 
                     // Pack and add the move
                     short move = MoveConversion.pack(fromPosition, toPosition);
-                    moves[arrayOffset + movesAdded] = move;
+                    moves[arrayOffset + movesAdded * 5 + 2] = move;
                     movesAdded++;
 
                     // Flip the highest set bit using Long.highestOneBit
@@ -232,7 +235,11 @@ public class BitMapMoveGenerator {
                     // Pack the from and to positions into a short
                     short move = MoveConversion.pack(fromPosition, toPosition);
                     // Add the packed move to the queue
-                    moves[arrayOffset + movesAdded] = move;
+                    if (moveWest) {
+                        moves[arrayOffset + movesAdded * 5 + 3] = move;
+                    } else {
+                        moves[arrayOffset + movesAdded * 5 + 4] = move;
+                    }
                     movesAdded++;
                     // Flip the lowest set bit to move on to the next piece
                     temp &= (temp - 1);
@@ -260,7 +267,11 @@ public class BitMapMoveGenerator {
                     // Pack the from and to positions into a short
                     short move = MoveConversion.pack(fromPosition, toPosition);
                     // Add the packed move to the queue
-                    moves[arrayOffset + movesAdded] = move;
+                    if (moveWest) {
+                        moves[arrayOffset + movesAdded * 5 + 3] = move;
+                    } else {
+                        moves[arrayOffset + movesAdded * 5 + 4] = move;
+                    }
                     movesAdded++;
                     // Flip the highest set bit using Long.highestOneBit
                     temp &= ~(1L << (63 - Long.numberOfLeadingZeros(temp)));
@@ -273,12 +284,12 @@ public class BitMapMoveGenerator {
 
 
     public static int populateShortArrayWithAllPossibleMoves(long[] board, boolean isPlayerOne, short[] moveArray, int arrayOffset) {
-        int movesAdded = 0;
-        movesAdded += populateShortArrayWithCaptureMoves(board, isPlayerOne, moveArray, arrayOffset);
-        if (movesAdded == 0) {
-            movesAdded += populateShortArrayWithQuietMoves(board, moveArray, isPlayerOne, arrayOffset + movesAdded);
+        int maxMovesAdded = 0;
+        maxMovesAdded = Math.max(maxMovesAdded, populateShortArrayWithCaptureMoves(board, isPlayerOne, moveArray, arrayOffset));
+        if (maxMovesAdded == 0) {
+            maxMovesAdded = Math.max(maxMovesAdded, populateShortArrayWithQuietMoves(board, moveArray, isPlayerOne, arrayOffset + maxMovesAdded));
         }
-        return movesAdded;
+        return maxMovesAdded;
 
     }
 
