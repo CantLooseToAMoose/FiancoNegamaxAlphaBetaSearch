@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.LongAdder;
 public class AlphaBetaSearchWithQuiescence {
     //Constants
     //
-    public static final int MAX_NUMBER_OF_MOVES = 15 * 4;
+    public static final int MAX_NUMBER_OF_MOVES = 15 * 5;
     public static final int MAX_NUMBER_OF_ACTUAL_DEPTH = 300;
     public static final int MAX_NUMBER_OF_MOVES_SINCE_LAST_CONVERSION = 15;
 

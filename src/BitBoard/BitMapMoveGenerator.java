@@ -11,7 +11,7 @@ import search.AlphaBeta.PVSWithQuiesAndKM;
 public class BitMapMoveGenerator {
 
 
-    private static int populateShortArrayWithCaptureMoves(long[] board, boolean isPlayerOne, short[] moveArray, int arrayDepthOffset) {
+    public static int populateShortArrayWithCaptureMoves(long[] board, boolean isPlayerOne, short[] moveArray, int arrayDepthOffset) {
         int maxMovesAdded = 0;
         long[] playerBoard;
         long[] opponentBoard;
@@ -33,9 +33,9 @@ public class BitMapMoveGenerator {
             capturePiecesEast = AdvancedBitOps.fasterPossibleNorthEastMovePieces(playerBoard, opponentBoard, freeTileBitMask);
             capturePiecesWest = AdvancedBitOps.fasterPossibleNorthWestMovePieces(playerBoard, opponentBoard, freeTileBitMask);
         }
-        maxMovesAdded = Math.max(maxMovesAdded, populateShortArrayWithCapturePiecesBoard(capturePiecesEast, isPlayerOne, false, moveArray, arrayDepthOffset));
+        maxMovesAdded += populateShortArrayWithCapturePiecesBoard(capturePiecesEast, isPlayerOne, false, moveArray, arrayDepthOffset);
 
-        maxMovesAdded = Math.max(maxMovesAdded, populateShortArrayWithCapturePiecesBoard(capturePiecesWest, isPlayerOne, true, moveArray, arrayDepthOffset));
+        maxMovesAdded += populateShortArrayWithCapturePiecesBoard(capturePiecesWest, isPlayerOne, true, moveArray, arrayDepthOffset);
         return maxMovesAdded;
     }
 
@@ -97,7 +97,7 @@ public class BitMapMoveGenerator {
     }
 
 
-    private static int populateShortArrayWithQuietMoves(long[] board, short[] moveArray, boolean isPlayerOne, int arrayOffset) {
+    public static int populateShortArrayWithQuietMoves(long[] board, short[] moveArray, boolean isPlayerOne, int arrayOffset) {
         int maxMovesAdded = 0;
         long[] playerBoard;
         long[] opponentBoard;
@@ -287,7 +287,7 @@ public class BitMapMoveGenerator {
         int maxMovesAdded = 0;
         maxMovesAdded = Math.max(maxMovesAdded, populateShortArrayWithCaptureMoves(board, isPlayerOne, moveArray, arrayOffset));
         if (maxMovesAdded == 0) {
-            maxMovesAdded = Math.max(maxMovesAdded, populateShortArrayWithQuietMoves(board, moveArray, isPlayerOne, arrayOffset + maxMovesAdded));
+            maxMovesAdded = Math.max(maxMovesAdded, populateShortArrayWithQuietMoves(board, moveArray, isPlayerOne, arrayOffset));
         }
         return maxMovesAdded;
 

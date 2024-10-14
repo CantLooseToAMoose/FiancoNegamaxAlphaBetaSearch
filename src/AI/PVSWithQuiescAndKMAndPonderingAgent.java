@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class PVSWithQuiescAndKMAndPonderingAgent implements IAgent {
-    public static final int MAX_GAME_MOVES = 600;
+    public static final int MAX_GAME_MOVES = 6000;
 
     private BitmapFianco fianco;
     private final int player;
@@ -50,7 +50,7 @@ public class PVSWithQuiescAndKMAndPonderingAgent implements IAgent {
 
     @Override
     public synchronized MoveCommand generateMove(MoveCommand move) {
-        long maxTime = 15 * 1_000_000_000L;
+        long maxTime = 5 * 1_000_000_000L;
         boolean isOnPVLine = false;
         if (move != null) {
             short shortMove = MoveConversion.getShortMoveFromMoveCommand(move);
@@ -75,7 +75,7 @@ public class PVSWithQuiescAndKMAndPonderingAgent implements IAgent {
             if (searchExecuter != null) {
                 alphaBetaSearch.stopSearchHard();
                 try {
-                    if (!searchExecuter.awaitTermination(1000, TimeUnit.MILLISECONDS)) {
+                    if (!searchExecuter.awaitTermination(500, TimeUnit.MILLISECONDS)) {
                         searchExecuter.shutdownNow();
                         System.out.println("SearchExecutor did not time out properly.");
                     }
@@ -100,13 +100,26 @@ public class PVSWithQuiescAndKMAndPonderingAgent implements IAgent {
 
 
         // Start pondering by assuming most promising move from opponent
-        searchExecuter = Executors.newSingleThreadExecutor();
-        pvLine = alphaBetaSearch.previousPVLine.clone();
+        searchExecuter = null;
+        short[] newPvLine = alphaBetaSearch.previousPVLine.clone();
+        //when because of whatever reason there is no real pvLine after alphabeta, check if the moves were expected from the previous pvLine
+        // and then continue to use the last pvLine rather the empty new one
+        if (newPvLine[0] == 0 && newPvLine[1] == 0) {
+            if (pvLine[2] == newMove && pvLine[3] != 0) {
+                System.out.println("New PvLine is empty and previous one matches. So take the previous One.");
+                System.arraycopy(pvLine, 2, pvLine, 0, pvLine.length - 2);
+            } else {
+                pvLine = alphaBetaSearch.previousPVLine.clone();
+            }
+        } else {
+            pvLine = alphaBetaSearch.previousPVLine.clone();
+        }
         lastIterationDepth = alphaBetaSearch.lastIterationDepth;
         System.out.println("Search finished and gave to agent PVLine:");
         PVSWithQuiesAndKM.printPVLine(pvLine, lastIterationDepth, player == 1);
         //Fake the new Move, dont worry if the move is real the values get actually updated
         if (pvLine[0] != 0 && pvLine[1] != 0) {
+            searchExecuter = Executors.newSingleThreadExecutor();
             short[] newPVline = new short[pvLine.length];
             System.arraycopy(pvLine, 2, newPVline, 0, pvLine.length - 2);
             long[] boardClone = board.clone();
@@ -124,7 +137,7 @@ public class PVSWithQuiescAndKMAndPonderingAgent implements IAgent {
                 try {
                     System.out.println("");
                     System.out.println("Start searching with previous PVLine.");
-                    alphaBetaSearch.GetBestMoveIterativeDeepening(boardClone, zobristHashClone, boardHistoryClone, newPVline, gameMoveClone, lastConversionMovesClone.get(lastConversionMoves.size() - 1), player == 1, Math.min(lastIterationDepth - 2, 9), 40, -Integer.MAX_VALUE, Integer.MAX_VALUE, 15 * maxTime);
+                    alphaBetaSearch.GetBestMoveIterativeDeepening(boardClone, zobristHashClone, boardHistoryClone, newPVline, gameMoveClone, lastConversionMovesClone.get(lastConversionMoves.size() - 1), player == 1, 1, 40, -Integer.MAX_VALUE, Integer.MAX_VALUE, 15 * maxTime);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -142,7 +155,7 @@ public class PVSWithQuiescAndKMAndPonderingAgent implements IAgent {
             if (!searchExecuter.awaitTermination(maxTime, TimeUnit.NANOSECONDS)) {
                 System.out.println("Time is Up. Stop Alpha Beta now.");
                 alphaBetaSearch.stopSearchSoft();
-                if (!searchExecuter.awaitTermination(1, TimeUnit.SECONDS)) {
+                if (!searchExecuter.awaitTermination(4, TimeUnit.SECONDS)) {
                     searchExecuter.shutdownNow();
                     System.out.println("Tried to shut down Pongering Search but it failed.");
                 }

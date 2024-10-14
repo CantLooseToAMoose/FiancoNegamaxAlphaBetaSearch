@@ -1,6 +1,8 @@
 package search.Evaluation;
 
 import BitBoard.BasicBitOps;
+import BitBoard.BitMapMoveGenerator;
+import BitBoard.BitmapFianco;
 
 public class Evaluate {
 
@@ -74,5 +76,29 @@ public class Evaluate {
 
     public static int combinedEvaluate(long[] board, boolean isPlayerOne) {
         return calculateWeightedPieceDifference(board, isPlayerOne) + 15 * calculatePieceDifference(board, isPlayerOne);
+    }
+
+    public static int combinedEvaluateWithBlockedPieceEvaluation(long[] board, boolean isPlayerOne) {
+        return combinedEvaluate(board, isPlayerOne) + blockedPiecesEvaluation(board, isPlayerOne);
+    }
+
+    public static int blockedPiecesEvaluation(long[] board, boolean isPlayerOne) {
+        if (BasicBitOps.getCombinedNumberOfOnesOnBoard(board) > 12) {
+            return 0;
+        }
+        int player1Unblocked = BlockPieceEvaluation.thereIsAnUnblockedPiece(board, isPlayerOne);
+        int player1Value = 0;
+        int player2Unblocked = BlockPieceEvaluation.thereIsAnUnblockedPiece(board, !isPlayerOne);
+        int player2Value = 0;
+        if (player1Unblocked != -1) {
+            player1Value = (player1Unblocked / 9 + 1) * 100;
+        }
+        if (player2Unblocked != -1) {
+            player2Value = (9 - player2Unblocked / 9) * 100;
+        }
+        if(player1Unblocked!=-1||player2Unblocked!=-1) {
+            BitmapFianco.ShowBitBoard(board);
+        }
+        return isPlayerOne ? player1Value - player2Value : player2Value - player1Value;
     }
 }

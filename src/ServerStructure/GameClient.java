@@ -48,6 +48,7 @@ public class GameClient {
                     aiAgent.resetBoard();
                 }
                 Thread.sleep(50);
+                System.gc();
             }
         } catch (IOException e) {
             e.printStackTrace();

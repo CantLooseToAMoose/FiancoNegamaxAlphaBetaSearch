@@ -248,6 +248,10 @@ public class BasicBitOps {
         return new int[]{Long.bitCount(board[0]) + Long.bitCount(board[1]), Long.bitCount(board[2]) + Long.bitCount(board[3])};
     }
 
+    public static int getCombinedNumberOfOnesOnBoard(long[] board) {
+        return Long.bitCount(board[0]) + Long.bitCount(board[1]) + Long.bitCount(board[2]) + Long.bitCount(board[3]);
+    }
+
     private static long[] resetBoard(long[] original) {
         return original.clone();
     }
