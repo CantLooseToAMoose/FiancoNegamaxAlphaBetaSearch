@@ -13,15 +13,17 @@ public class BitMapMoveGenerator {
 
     public static int populateShortArrayWithCaptureMoves(long[] board, boolean isPlayerOne, short[] moveArray, int arrayDepthOffset) {
         int maxMovesAdded = 0;
-        long[] playerBoard;
-        long[] opponentBoard;
-        if (isPlayerOne) {
-            playerBoard = new long[]{board[0], board[1]};
-            opponentBoard = new long[]{board[2], board[3]};
-        } else {
-            playerBoard = new long[]{board[2], board[3]};
-            opponentBoard = new long[]{board[0], board[1]};
-        }
+        long[] playerBoard = new long[2];
+        long[] opponentBoard = new long[2];
+
+        // Inline the logic instead of branching:
+        int index1 = isPlayerOne ? 0 : 2;
+        int index2 = isPlayerOne ? 1 : 3;
+
+        playerBoard[0] = board[index1];
+        playerBoard[1] = board[index2];
+        opponentBoard[0] = board[index1 ^ 2]; // Toggle between 0 <-> 2
+        opponentBoard[1] = board[index2 ^ 2]; // Toggle between 1 <-> 3
         long[] capturePiecesWest;
         long[] capturePiecesEast;
         long[] freeTileBitMask = BitMaskCreationHelper.getFreeTilesBitMask(playerBoard, opponentBoard);

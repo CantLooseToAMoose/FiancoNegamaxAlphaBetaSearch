@@ -41,6 +41,10 @@ public class BasicBitOps {
     public static final long[] CAN_BLOCK_PLAYER_1_PIECE_MASK = BitMaskCreationHelper.getCanBlockPlayer1PieceMask();
     public static final long[] CAN_BLOCK_PLAYER_2_PIECE_MASK = BitMaskCreationHelper.getCanBlockPlayer2PieceMask();
 
+    //For BlockedPiecesEvaluation
+    public static final long[] ONLY_NORTH_HALF_OF_BOARD_MASK = BitMaskCreationHelper.getOnlyNorthHalfOfBoardMask();
+    public static final long[] ONLY_SOUTH_HALF_OF_BOARD_MASK = BitMaskCreationHelper.getOnlySouthHalfOfTheBoardMask();
+
 
     public static long[] bitShiftL(long[] board, int shiftBy) {
         long[] shifted = new long[]{board[0] << shiftBy | board[1] >>> 64 - shiftBy, board[1] << shiftBy};
@@ -84,84 +88,105 @@ public class BasicBitOps {
     }
 
     public static long[] shiftNorth(long[] board, int steps) {
-        long[] shifted = bitShiftL(board, 9);
-        if (steps == 1) {
-            return shifted;
-        } else {
-            return shiftNorth(shifted, steps - 1);
+        long[] shifted = board;
+        for (int i = 0; i < steps; i++) {
+            if (i == 0) {
+                shifted = bitShiftL(board, 9);
+            } else {
+                bitShiftLInPlace(shifted, 9);
+            }
         }
+        return shifted;
     }
 
     public static long[] shiftSouth(long[] board, int steps) {
-        long[] shifted = bitShiftR(board, 9);
-        if (steps == 1) {
-            return shifted;
-        } else {
-            return shiftSouth(shifted, steps - 1);
+        long[] shifted = board;
+        for (int i = 0; i < steps; i++) {
+            if (i == 0) {
+                shifted = bitShiftR(board, 9);
+            } else {
+                bitShiftRInPlace(shifted, 9);
+            }
         }
+        return shifted;
     }
 
     public static long[] shiftEast(long[] board, int steps) {
-        long[] masked = and(board, EAST_BORDER_MASK);
-        masked = bitShiftR(masked, 1);
-        if (steps == 1) {
-            return masked;
-        } else {
-            return shiftEast(masked, steps - 1);
+        long[] masked = board;
+        for (int i = 0; i < steps; i++) {
+            if (i == 0) {
+                masked = and(masked, EAST_BORDER_MASK);
+            } else {
+                andInPlace(masked, EAST_BORDER_MASK);
+            }
+            bitShiftRInPlace(masked, 1);
         }
+        return masked;
     }
 
     public static long[] shiftWest(long[] board, int steps) {
-        long[] masked = and(board, WEST_BORDER_MASK);
-        masked = bitShiftL(masked, 1);
-        if (steps == 1) {
-            return masked;
-        } else {
-            return shiftWest(masked, steps - 1);
+        long[] masked = board;
+        for (int i = 0; i < steps; i++) {
+            if (i == 0) {
+                masked = and(masked, WEST_BORDER_MASK);
+            } else {
+                andInPlace(masked, WEST_BORDER_MASK);
+            }
+            bitShiftLInPlace(masked, 1);
         }
+        return masked;
     }
 
     public static long[] shiftNorthWest(long[] board, int steps) {
-        long[] shifted = shiftNorth(board, 1);
-        shifted = shiftWest(shifted, 1);
-        if (steps == 1) {
-            return shifted;
-        } else {
-            return shiftNorthWest(shifted, steps - 1);
+        long[] shifted = board;
+        for (int i = 0; i < steps; i++) {
+            if (i == 0) {
+                shifted = shiftNorth(board, 1);
+            } else {
+                shiftNorthInPlace(shifted, 1);
+            }
+            shiftWestInPlace(shifted, 1);
         }
+        return shifted;
     }
 
     public static long[] shiftNorthEast(long[] board, int steps) {
-
-        long[] shifted = shiftNorth(board, 1);
-        shifted = shiftEast(shifted, 1);
-        if (steps == 1) {
-            return shifted;
-        } else {
-            return shiftNorthEast(shifted, steps - 1);
+        long[] shifted = board;
+        for (int i = 0; i < steps; i++) {
+            if (i == 0) {
+                shifted = shiftNorth(board, 1);
+            } else {
+                shiftNorthInPlace(shifted, 1);
+            }
+            shiftEastInPlace(shifted, 1);
         }
+        return shifted;
     }
 
     public static long[] shiftSouthWest(long[] board, int steps) {
-
-        long[] shifted = shiftSouth(board, 1);
-        shifted = shiftWest(shifted, 1);
-        if (steps == 1) {
-            return shifted;
-        } else {
-            return shiftSouthWest(shifted, steps - 1);
+        long[] shifted = board;
+        for (int i = 0; i < steps; i++) {
+            if (i == 0) {
+                shifted = shiftSouth(board, 1);
+            } else {
+                shiftSouthInPlace(shifted, 1);
+            }
+            shiftWestInPlace(shifted, 1);
         }
+        return shifted;
     }
 
     public static long[] shiftSouthEast(long[] board, int steps) {
-        // Shift South first, then shift East
-        long[] shifted = shiftSouth(board, 1);
-        shifted = shiftEast(shifted, 1);
-        if (steps == 1) {
-            return shifted;
-        } else {
-            return shiftSouthEast(shifted, steps - 1);
+        long[] shifted = board;
+        for (int i = 0; i < steps; i++) {
+            if (i == 0) {
+                shifted = shiftSouth(board, 1);
+            } else {
+                shiftSouthInPlace(shifted, 1);
+            }
+            shiftEastInPlace(shifted, 1);
         }
+        return shifted;
     }
 
     public static void orInPlace(long[] board1, long[] board2) {
@@ -301,24 +326,24 @@ public class BasicBitOps {
 
         // 4. Test shiftNorth method:
         System.out.println("\nTest shiftNorth method:");
-        long[] shiftedNorth = BasicBitOps.shiftNorth(bitBoard, 1);
+        long[] shiftedNorth = BasicBitOps.shiftNorth(bitBoard, 2);
         BitmapFianco.ShowBitBoard(shiftedNorth);
 
         // Test in-place shiftNorth
         System.out.println("Test shiftNorthInPlace method:");
         bitBoardCopy = bitmapFianco.getPlayer1Board().clone();
-        BasicBitOps.shiftNorthInPlace(bitBoardCopy, 1);
+        BasicBitOps.shiftNorthInPlace(bitBoardCopy, 2);
         BitmapFianco.ShowBitBoard(bitBoardCopy);
 
         // 5. Test shiftSouth method:
         System.out.println("\nTest shiftSouth method:");
-        long[] shiftedSouth = BasicBitOps.shiftSouth(bitBoard, 1);
+        long[] shiftedSouth = BasicBitOps.shiftSouth(bitBoard, 2);
         BitmapFianco.ShowBitBoard(shiftedSouth);
 
         // Test in-place shiftSouth
         System.out.println("Test shiftSouthInPlace method:");
         bitBoardCopy = bitmapFianco.getPlayer1Board().clone();
-        BasicBitOps.shiftSouthInPlace(bitBoardCopy, 1);
+        BasicBitOps.shiftSouthInPlace(bitBoardCopy, 2);
         BitmapFianco.ShowBitBoard(bitBoardCopy);
 
         // 6. Test XOR method:
@@ -334,22 +359,40 @@ public class BasicBitOps {
 
         // 7. Test shiftWest and shiftEast methods:
         System.out.println("\nTest shiftWest method:");
-        long[] shiftedWest = BasicBitOps.shiftWest(bitBoard, 1);
+        long[] shiftedWest = BasicBitOps.shiftWest(bitBoard, 2);
         BitmapFianco.ShowBitBoard(shiftedWest);
 
         System.out.println("Test shiftWestInPlace method:");
         bitBoardCopy = bitmapFianco.getPlayer1Board().clone();
-        BasicBitOps.shiftWestInPlace(bitBoardCopy, 1);
+        BasicBitOps.shiftWestInPlace(bitBoardCopy, 2);
         BitmapFianco.ShowBitBoard(bitBoardCopy);
 
         System.out.println("\nTest shiftEast method:");
-        long[] shiftedEast = BasicBitOps.shiftEast(bitBoard, 1);
+        long[] shiftedEast = BasicBitOps.shiftEast(bitBoard, 2);
         BitmapFianco.ShowBitBoard(shiftedEast);
 
         System.out.println("Test shiftEastInPlace method:");
         bitBoardCopy = bitmapFianco.getPlayer1Board().clone();
-        BasicBitOps.shiftEastInPlace(bitBoardCopy, 1);
+        BasicBitOps.shiftEastInPlace(bitBoardCopy, 2);
         BitmapFianco.ShowBitBoard(bitBoardCopy);
+
+
+        System.out.println("Test shiftNorthEast method:");
+        long[] shiftedNorthEast = BasicBitOps.shiftNorthEast(bitBoard, 2);
+        BitmapFianco.ShowBitBoard(shiftedNorthEast);
+
+        System.out.println("Test shiftNorthWest method:");
+        long[] shiftedNorthWest = BasicBitOps.shiftNorthWest(bitBoard, 2);
+        BitmapFianco.ShowBitBoard(shiftedNorthWest);
+
+        System.out.println("Test shiftSouthEast method:");
+        long[] shiftedSouthEast = BasicBitOps.shiftSouthEast(bitBoard, 2);
+        BitmapFianco.ShowBitBoard(shiftedSouthEast);
+
+        System.out.println("Test shiftSouthWest method:");
+        long[] shiftedSouthWest = BasicBitOps.shiftSouthWest(bitBoard, 2);
+        BitmapFianco.ShowBitBoard(shiftedSouthWest);
+
 
         System.out.println("Benchmarking methods vs. their in-place versions:");
 

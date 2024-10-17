@@ -6,8 +6,6 @@ import BitBoard.BitmapFianco;
 
 public class Evaluate {
 
-    //    TODO: expand on rating the pieces by the number of pieces they can be blocked by. And by the number of pieces they are blocking.
-//    Idea: Try to get a board with numbers that represent the number of pieces that can reach this position in n-rounds. Then compare to the places that a piece can reach in n rounds.
     public static int calculatePieceDifference(long[] board, boolean isPlayerOne) {
         int[] piecesOnBoard = BasicBitOps.getNumberOfOnesOnBoard(board);
         if (isPlayerOne) {
@@ -39,11 +37,19 @@ public class Evaluate {
 
     public static boolean checkForWin(long[] board, boolean isPlayerOne) {
         int[] piecesOnBoard = BasicBitOps.getNumberOfOnesOnBoard(board);
+        int index1 = isPlayerOne ? 0 : 2;
+        int index2 = isPlayerOne ? 1 : 3;
+
+        long[] playerBoard = new long[2];
+
+        playerBoard[0] = board[index1];
+        playerBoard[1] = board[index2];
+
         if (isPlayerOne) {
             if (piecesOnBoard[1] == 0) {
                 return true;
             }
-            long[] lastRow = BasicBitOps.and(new long[]{board[0], board[1]}, BasicBitOps.ROW_MASK_SET[8]);
+            long[] lastRow = BasicBitOps.and(playerBoard, BasicBitOps.ONLY_ROW_NINE_MASK);
             if (BasicBitOps.getNumberOfOnesInPlayerBoard(lastRow) != 0) {
                 return true;
             }
@@ -51,7 +57,7 @@ public class Evaluate {
             if (piecesOnBoard[0] == 0) {
                 return true;
             }
-            long[] firstRow = BasicBitOps.and(new long[]{board[2], board[3]}, BasicBitOps.ROW_MASK_SET[0]);
+            long[] firstRow = BasicBitOps.and(playerBoard, BasicBitOps.ONLY_ROW_ONE_MASK);
             if (BasicBitOps.getNumberOfOnesInPlayerBoard(firstRow) != 0) {
                 return true;
             }
@@ -83,22 +89,11 @@ public class Evaluate {
     }
 
     public static int blockedPiecesEvaluation(long[] board, boolean isPlayerOne) {
-        if (BasicBitOps.getCombinedNumberOfOnesOnBoard(board) > 12) {
+        boolean unblockedPiecePlayer1 = BlockPieceEvaluation.thereIsAnUnblockedPiece(board, isPlayerOne);
+        boolean unblockedPiecePlayer2 = BlockPieceEvaluation.thereIsAnUnblockedPiece(board, !isPlayerOne);
+        if (unblockedPiecePlayer1 && unblockedPiecePlayer2 || !unblockedPiecePlayer1 && !unblockedPiecePlayer2) {
             return 0;
         }
-        int player1Unblocked = BlockPieceEvaluation.thereIsAnUnblockedPiece(board, isPlayerOne);
-        int player1Value = 0;
-        int player2Unblocked = BlockPieceEvaluation.thereIsAnUnblockedPiece(board, !isPlayerOne);
-        int player2Value = 0;
-        if (player1Unblocked != -1) {
-            player1Value = (player1Unblocked / 9 + 1) * 100;
-        }
-        if (player2Unblocked != -1) {
-            player2Value = (9 - player2Unblocked / 9) * 100;
-        }
-        if(player1Unblocked!=-1||player2Unblocked!=-1) {
-            BitmapFianco.ShowBitBoard(board);
-        }
-        return isPlayerOne ? player1Value - player2Value : player2Value - player1Value;
+        return unblockedPiecePlayer1 ? 500 : -500;
     }
 }

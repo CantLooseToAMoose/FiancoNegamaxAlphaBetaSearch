@@ -40,11 +40,11 @@ public class PVSWithQuiesAndKM {
 
     //For Debugging
     public LongAdder nodes = new LongAdder();
-    public LongAdder ttEntriesFound = new LongAdder();
-    public LongAdder ttHashCollision = new LongAdder();
-    public LongAdder exactTTPruning = new LongAdder();
-    public LongAdder basicTTPruning = new LongAdder();
-    public LongAdder alphaBetaPruning = new LongAdder();
+//    public LongAdder ttEntriesFound = new LongAdder();
+//    public LongAdder ttHashCollision = new LongAdder();
+//    public LongAdder exactTTPruning = new LongAdder();
+//    public LongAdder basicTTPruning = new LongAdder();
+//    public LongAdder alphaBetaPruning = new LongAdder();
 
     //For Repetition Detection
     private long[] boardHistory = new long[MAX_NUMBER_OF_ACTUAL_DEPTH + MAX_NUMBER_OF_MOVES_SINCE_LAST_CONVERSION];
@@ -89,10 +89,10 @@ public class PVSWithQuiesAndKM {
         if (entry == null) {
             store = true;
         } else {
-            ttEntriesFound.increment();
+//            ttEntriesFound.increment();
             //if entry exists
-            if (zobristHash != entry.hash || !BitMapMoveGenerator.isMoveValid(board, entry.bestMove, isPlayerOneTurn)) {
-                ttHashCollision.increment();
+            if (!BitMapMoveGenerator.isMoveValid(board, entry.bestMove, isPlayerOneTurn)) {
+//                ttHashCollision.increment();
                 store = true;
             } else {
                 //the entry is of the same board state
@@ -101,7 +101,8 @@ public class PVSWithQuiesAndKM {
                     store = true;
                 } else {
                     if (entry.type == 0) {
-                        exactTTPruning.increment();
+//                        exactTTPruning.increment();
+                        pvLine[actualDepth] = entry.bestMove;
                         return entry.score;
                     } else if (entry.type == 1) {
                         alpha = Math.max(oldAlpha, entry.score);
@@ -109,7 +110,8 @@ public class PVSWithQuiesAndKM {
                         beta = Math.min(beta, entry.score);
                     }
                     if (alpha >= beta) {
-                        basicTTPruning.increment();
+//                        basicTTPruning.increment();
+                        pvLine[actualDepth] = entry.bestMove;
                         return entry.score;
                     }
                     ttMove = entry.bestMove;
@@ -147,14 +149,12 @@ public class PVSWithQuiesAndKM {
         }
         // Check for no more depth and maybe Quiescence
 
-        boolean quiescence = false;
 
         if (depth == 0) {
             if ((maxCaptureMovesAdded == 0)) {
                 return Evaluate.combinedEvaluateWithBlockedPieceEvaluation(board, isPlayerOneTurn);
             } else {
                 depth++;
-                quiescence = true;
             }
         }
         short bestMove = 0;
@@ -248,7 +248,7 @@ public class PVSWithQuiesAndKM {
                     killerMoves[actualDepth][1] = killerMoves[actualDepth][0];
                     killerMoves[actualDepth][0] = move;
                 }
-                alphaBetaPruning.increment();
+//                alphaBetaPruning.increment();
                 break;
             }
         }
@@ -276,11 +276,11 @@ public class PVSWithQuiesAndKM {
         long startTime = System.nanoTime();
         long passedTime = 0;
         nodes.reset();
-        basicTTPruning.reset();
-        exactTTPruning.reset();
-        alphaBetaPruning.reset();
-        ttHashCollision.reset();
-        ttEntriesFound.reset();
+//        basicTTPruning.reset();
+//        exactTTPruning.reset();
+//        alphaBetaPruning.reset();
+//        ttHashCollision.reset();
+//        ttEntriesFound.reset();
 
         afterIterationBestMove = 0;
         int afterIterationBestScore = 0;
@@ -304,9 +304,13 @@ public class PVSWithQuiesAndKM {
                 afterIterationBestMove = moveArray[0];
                 afterIterationBestPVLine = previousPVLine.clone();
                 TranspositionTableEntry entry = TranspositionTable.retrieve(primaryTranspositionTable, transpositionTable, Zobrist.updateHash(zobristHash, afterIterationBestMove, isPlayerOne), TranspositionTable.PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, minDepth);
+                afterIterationBestPVLine[0] = afterIterationBestMove;
                 if (entry != null) {
-                    afterIterationBestPVLine[0] = afterIterationBestMove;
-                    afterIterationBestPVLine[1] = entry.bestMove;
+                    long[] boardClone = board.clone();
+                    BitMapMoveGenerator.makeOrUnmakeMoveInPlace(boardClone, entry.bestMove, !isPlayerOne);
+                    if (BitMapMoveGenerator.isMoveValid(boardClone, entry.bestMove, !isPlayerOne)) {
+                        afterIterationBestPVLine[1] = entry.bestMove;
+                    }
                 }
                 return moveArray[0];
             }
@@ -315,19 +319,20 @@ public class PVSWithQuiesAndKM {
                 afterIterationBestMove = moveArray[1];
                 afterIterationBestPVLine = previousPVLine.clone();
                 TranspositionTableEntry entry = TranspositionTable.retrieve(primaryTranspositionTable, transpositionTable, Zobrist.updateHash(zobristHash, afterIterationBestMove, isPlayerOne), TranspositionTable.PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, minDepth);
+                afterIterationBestPVLine[0] = afterIterationBestMove;
                 if (entry != null) {
-                    afterIterationBestPVLine[0] = afterIterationBestMove;
-                    afterIterationBestPVLine[1] = entry.bestMove;
+                    long[] boardClone = board.clone();
+                    BitMapMoveGenerator.makeOrUnmakeMoveInPlace(boardClone, entry.bestMove, !isPlayerOne);
+                    if (BitMapMoveGenerator.isMoveValid(boardClone, entry.bestMove, !isPlayerOne)) {
+                        afterIterationBestPVLine[1] = entry.bestMove;
+                    }
                 }
                 return moveArray[1];
             }
         }
         // Reinitialize
-        if (this.transpositionTable == null) {
-            this.transpositionTable = new TranspositionTableEntry[TRANSPOSITION_TABLE_SIZE];
-        } else {
-            Arrays.fill(this.transpositionTable, null); // Clear previous entries
-        }
+        this.transpositionTable = new TranspositionTableEntry[TRANSPOSITION_TABLE_SIZE];
+
         for (int depth = minDepth; depth <= maxDepth; depth++) {
             if (stopSoft) {
                 break;
@@ -351,11 +356,11 @@ public class PVSWithQuiesAndKM {
             Runnable task = () -> {
                 try {
                     while (true) {
+                        int currentMoveIndex = moveIndex.getAndIncrement();  // Atomically get next move
+                        if (currentMoveIndex >= maxNumberOfMovesForAllTypes * 5) break;  // No more moves to process
                         if (stopSoft) {
                             break;
                         }
-                        int currentMoveIndex = moveIndex.getAndIncrement();  // Atomically get next move
-                        if (currentMoveIndex >= maxNumberOfMovesForAllTypes * 5) break;  // No more moves to process
                         short move;
                         if (currentMoveIndex == -1) {
                             move = pvLine[actualDepth];
@@ -411,7 +416,7 @@ public class PVSWithQuiesAndKM {
                         executor.shutdownNow();
                         break;
                     } else {
-                        if (!(bestScore.get() == -Integer.MAX_VALUE) && !stopHard) {
+                        if (!(bestScore.get() == -Integer.MAX_VALUE) && !stopHard && moveIndex.get() >= 4) {
                             afterIterationBestScore = bestScore.get();
                             afterIterationBestMove = (short) sharedBestMove.get();
                             afterIterationBestPVLine = pvLine.clone();
@@ -424,7 +429,7 @@ public class PVSWithQuiesAndKM {
                         executor.shutdownNow();
                         break;
                     } else {
-                        if (!(bestScore.get() == -Integer.MAX_VALUE) && !stopHard) {
+                        if (!(bestScore.get() == -Integer.MAX_VALUE) && !stopHard && moveIndex.get() >= 4) {
                             afterIterationBestScore = bestScore.get();
                             afterIterationBestMove = (short) sharedBestMove.get();
                             afterIterationBestPVLine = pvLine.clone();
@@ -435,7 +440,7 @@ public class PVSWithQuiesAndKM {
                 }
             } catch (InterruptedException e) {
                 System.out.println("Alpha Beta Search got interrupted.");
-                if (!(bestScore.get() == -Integer.MAX_VALUE) && !stopHard) {
+                if (!(bestScore.get() == -Integer.MAX_VALUE) && !stopHard && moveIndex.get() >= 4) {
                     afterIterationBestScore = bestScore.get();
                     afterIterationBestMove = (short) sharedBestMove.get();
                     afterIterationBestPVLine = pvLine.clone();
@@ -460,11 +465,11 @@ public class PVSWithQuiesAndKM {
         long endTime = System.nanoTime();
         System.out.println("");
         System.out.println("Nodes: " + nodes.sum());
-        System.out.println("Transposition Entries found: " + ttEntriesFound.sum() + ". Percent of Total nodes: " + (float) ttEntriesFound.sum() / nodes.sum() * 100 + "%");
-        System.out.println("Transposition Table Collision: " + ttHashCollision.sum() + ". Percent of entries found: " + (float) ttHashCollision.sum() / ttEntriesFound.sum() * 100 + "%");
-        System.out.println("Alpha Beta Pruning: " + alphaBetaPruning.sum() + ". Percent of Total nodes: " + (float) alphaBetaPruning.sum() / nodes.sum() * 100 + "%");
-        System.out.println("Transposition Table Exact Value Pruning: " + exactTTPruning.sum() + ". Percent of correct entries found: " + (float) exactTTPruning.sum() / (ttEntriesFound.sum() - ttHashCollision.sum()) * 100 + "%");
-        System.out.println("Transposition Table Alpha Beta Pruning: " + basicTTPruning.sum() + ". Percent of correct entries found: " + (float) basicTTPruning.sum() / (ttEntriesFound.sum() - ttHashCollision.sum()) * 100 + "%");
+//        System.out.println("Transposition Entries found: " + ttEntriesFound.sum() + ". Percent of Total nodes: " + (float) ttEntriesFound.sum() / nodes.sum() * 100 + "%");
+//        System.out.println("Transposition Table Collision: " + ttHashCollision.sum() + ". Percent of entries found: " + (float) ttHashCollision.sum() / ttEntriesFound.sum() * 100 + "%");
+//        System.out.println("Alpha Beta Pruning: " + alphaBetaPruning.sum() + ". Percent of Total nodes: " + (float) alphaBetaPruning.sum() / nodes.sum() * 100 + "%");
+//        System.out.println("Transposition Table Exact Value Pruning: " + exactTTPruning.sum() + ". Percent of correct entries found: " + (float) exactTTPruning.sum() / (ttEntriesFound.sum() - ttHashCollision.sum()) * 100 + "%");
+//        System.out.println("Transposition Table Alpha Beta Pruning: " + basicTTPruning.sum() + ". Percent of correct entries found: " + (float) basicTTPruning.sum() / (ttEntriesFound.sum() - ttHashCollision.sum()) * 100 + "%");
         System.out.println("Max Actual Depth: " + maxActualDepth);
 
         System.out.println("Time: " + (endTime - startTime) / 1_000_000_000.0 + "s");

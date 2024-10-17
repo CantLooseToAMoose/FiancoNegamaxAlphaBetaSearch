@@ -3,57 +3,71 @@ package search.Evaluation;
 import BitBoard.BasicBitOps;
 import BitBoard.BitmapFianco;
 
-import java.util.*;
-
 public class BlockPieceEvaluation {
     private static final int player1BlockMaskRow = (5 - 1) / 9;
     private static final int player2BlockMaskRow = (77 - 1) / 9;
     private static final int player1BlockMaskCol = (5 - 1) % 9;
     private static final int player2BlockMaskCol = (77 - 1) % 9;
+    private static final long[][][] player1BlockMaskDependingOnPieceRowAndCol = getPlayer1BlockMaskDependingOnPieceRowAndCol();
+    private static final long[][][] player2BlockMaskDependingOnPieceRowAndCol = getPlayer2BlockMaskDependingOnPieceRowAndCol();
+
+
+    private static long[][][] getPlayer1BlockMaskDependingOnPieceRowAndCol() {
+        long[][][] masks = new long[9][9][2];
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                long[] mask = BasicBitOps.CAN_BLOCK_PLAYER_1_PIECE_MASK.clone();
+                int rowDiff = player1BlockMaskRow - i;
+                int colDiff = player1BlockMaskCol - j;
+                if (rowDiff < 0) {
+                    BasicBitOps.shiftSouthInPlace(mask, Math.abs(rowDiff));
+                } else if (rowDiff > 0) {
+                    BasicBitOps.shiftNorthInPlace(mask, rowDiff);
+                }
+                if (colDiff < 0) {
+                    BasicBitOps.shiftEastInPlace(mask, Math.abs(colDiff));
+                } else {
+                    BasicBitOps.shiftWestInPlace(mask, colDiff);
+                }
+                masks[i][j] = mask.clone();
+            }
+        }
+        return masks;
+    }
+
+    private static long[][][] getPlayer2BlockMaskDependingOnPieceRowAndCol() {
+        long[][][] masks = new long[9][9][2];
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                long[] mask = BasicBitOps.CAN_BLOCK_PLAYER_2_PIECE_MASK.clone();
+                int rowDiff = player2BlockMaskRow - i;
+                int colDiff = player2BlockMaskCol - j;
+
+                if (rowDiff < 0) {
+                    BasicBitOps.shiftSouthInPlace(mask, Math.abs(rowDiff));
+                } else if (rowDiff > 0) {
+                    BasicBitOps.shiftNorthInPlace(mask, rowDiff);
+                }
+                if (colDiff < 0) {
+                    BasicBitOps.shiftEastInPlace(mask, Math.abs(colDiff));
+                } else {
+                    BasicBitOps.shiftWestInPlace(mask, colDiff);
+                }
+                masks[i][j] = mask.clone();
+            }
+        }
+        return masks;
+    }
 
 
     public static long[] BoardOfEnemyBlocksForPiece(long[] player1Board, long[] player2Board, int piecePosition, boolean isPlayerOne) {
         long[] mask;
         int rowTo = (piecePosition - 1) / 9;
         int colTo = (piecePosition - 1) % 9;
-        int rowDiff = 0;
-        int colDiff = 0;
         if (isPlayerOne) {
-            mask = BasicBitOps.CAN_BLOCK_PLAYER_1_PIECE_MASK.clone();
-            rowDiff = player1BlockMaskRow - rowTo;
-            colDiff = player1BlockMaskCol - colTo;
-            if (rowDiff == 0 && colDiff == 0) {
-                BasicBitOps.andInPlace(mask, player2Board);
-            }
-            if (rowDiff < 0) {
-                BasicBitOps.shiftSouthInPlace(mask, Math.abs(rowDiff));
-            } else if (rowDiff > 0) {
-                BasicBitOps.shiftNorthInPlace(mask, rowDiff);
-            }
-            if (colDiff < 0) {
-                BasicBitOps.shiftEastInPlace(mask, Math.abs(colDiff));
-            } else {
-                BasicBitOps.shiftWestInPlace(mask, colDiff);
-            }
-            BasicBitOps.andInPlace(mask, player2Board);
+            mask = BasicBitOps.and(player1BlockMaskDependingOnPieceRowAndCol[rowTo][colTo], player2Board);
         } else {
-            mask = BasicBitOps.CAN_BLOCK_PLAYER_2_PIECE_MASK.clone();
-            rowDiff = player2BlockMaskRow - rowTo;
-            colDiff = player2BlockMaskCol - colTo;
-            if (rowDiff == 0 && colDiff == 0) {
-                BasicBitOps.andInPlace(mask, player1Board);
-            }
-            if (rowDiff < 0) {
-                BasicBitOps.shiftSouthInPlace(mask, Math.abs(rowDiff));
-            } else if (rowDiff > 0) {
-                BasicBitOps.shiftNorthInPlace(mask, rowDiff);
-            }
-            if (colDiff < 0) {
-                BasicBitOps.shiftEastInPlace(mask, Math.abs(colDiff));
-            } else {
-                BasicBitOps.shiftWestInPlace(mask, colDiff);
-            }
-            BasicBitOps.andInPlace(mask, player1Board);
+            mask = BasicBitOps.and(player2BlockMaskDependingOnPieceRowAndCol[rowTo][colTo], player1Board);
         }
         return mask;
     }
@@ -94,14 +108,13 @@ public class BlockPieceEvaluation {
     }
 
 
-    public static int thereIsAnUnblockedPiece(long[] board, boolean isPlayerOne) {
+    public static boolean thereIsAnUnblockedPiece(long[] board, boolean isPlayerOne) {
 
         // First of all Populate these arrays to know which blockers there are for each piece
         int[] pieces = new int[82];
         int[] blockers = new int[82];
         int uniquePieces = 0;
         int uniqueBlockers = 0;
-        int[] uniquePiecePosition = new int[16];
         int[] pieceBlockers = new int[16];  // Bitmask of blockers for each piece
 
 
@@ -110,8 +123,10 @@ public class BlockPieceEvaluation {
         long[] playerBoard;
         if (isPlayerOne) {
             playerBoard = player1Board;
+            playerBoard = BasicBitOps.and(playerBoard, BasicBitOps.ONLY_SOUTH_HALF_OF_BOARD_MASK);
         } else {
             playerBoard = player2Board;
+            playerBoard = BasicBitOps.and(playerBoard, BasicBitOps.ONLY_NORTH_HALF_OF_BOARD_MASK);
         }
         for (int i = 0; i < playerBoard.length; i++) {
             long temp;
@@ -133,7 +148,6 @@ public class BlockPieceEvaluation {
                     long[] blockMask = BoardOfEnemyBlocksForPiece(player1Board, player2Board, piecePosition, isPlayerOne);
 
                     if (pieces[piecePosition] == 0) {
-                        uniquePiecePosition[uniquePieces] = piecePosition;
                         pieces[piecePosition] = uniquePieces++;
                     }
                     for (int j = 0; j < blockMask.length; j++) {
@@ -171,7 +185,6 @@ public class BlockPieceEvaluation {
                     long[] blockMask = BoardOfEnemyBlocksForPiece(player1Board, player2Board, piecePosition, isPlayerOne);
 
                     if (pieces[piecePosition] == 0) {
-                        uniquePiecePosition[uniquePieces] = piecePosition;
                         pieces[piecePosition] = uniquePieces++;
                     }
                     for (int j = 0; j < blockMask.length; j++) {
@@ -200,19 +213,14 @@ public class BlockPieceEvaluation {
         }
 
 
-        int piece = findUnblockedPiece(pieceBlockers, uniquePieces, 0, 0);
-        if (piece == -1) {
-            return -1;
-        } else {
-            return uniquePiecePosition[piece];
-        }
+        return findUnblockedPiece(pieceBlockers, uniquePieces, 0, 0);
     }
 
 
-    public static int findUnblockedPiece(int[] pieceBlockers, int numberOfPieces, int pieceIndex, int usedBlockers) {
+    public static boolean findUnblockedPiece(int[] pieceBlockers, int numberOfPieces, int pieceIndex, int usedBlockers) {
         // Base case: If all pieces have been considered, return empty
         if (pieceIndex == numberOfPieces) {
-            return -1;
+            return false;
         }
 
         // Get the available blockers for the current piece (not already used)
@@ -220,7 +228,7 @@ public class BlockPieceEvaluation {
 
         // If no blockers are available for this piece, it can reach the goal
         if (availableBlockers == 0) {
-            return pieceIndex;
+            return true;
         }
 
         // Try to assign a blocker to this piece
@@ -229,12 +237,12 @@ public class BlockPieceEvaluation {
             availableBlockers &= availableBlockers - 1;  // Remove this blocker from consideration
 
             // Recursively check for the next piece using the assigned blocker
-            int result = findUnblockedPiece(pieceBlockers, numberOfPieces, pieceIndex + 1, usedBlockers | blocker);
-            if (result != -1) {
+            boolean result = findUnblockedPiece(pieceBlockers, numberOfPieces, pieceIndex + 1, usedBlockers | blocker);
+            if (result) {
                 return result;  // If valid, propagate the result upwards
             }
         }
-        return -1;
+        return false;
     }
 
     public static void main(String[] args) {

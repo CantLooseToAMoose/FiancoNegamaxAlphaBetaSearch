@@ -20,11 +20,11 @@ public class TranspositionTable {
         } else {
             //If there is an entry but the boardstate does not match, save the new one
             if (entry.hash != hash) {
-                entry.setValuesSynced(hash, depth, score, type, bestMove);
+                table[index] = new TranspositionTableEntry(hash, depth, score, type, bestMove);
             } else {
                 //If there is an entry and the boardstate matches save the one with the higher depth
                 if (entry.depth < depth) {
-                    entry.setValuesSynced(hash, depth, score, type, bestMove);
+                    table[index] = new TranspositionTableEntry(hash, depth, score, type, bestMove);
                 }
             }
         }
@@ -35,12 +35,11 @@ public class TranspositionTable {
         TranspositionTableEntry entry = retrieve(table, hash, size);
         if (entry == null) {
             //If there is no existing entry
-            entry = new TranspositionTableEntry(hash, depth, score, type, bestMove);
-            table[index] = entry;
+            table[index] = new TranspositionTableEntry(hash, depth, score, type, bestMove);
         } else {
             //If there is an entry save the one with the higher depth
             if (entry.depth < depth) {
-                entry.setValuesSynced(hash, depth, score, type, bestMove);
+                table[index] = new TranspositionTableEntry(hash, depth, score, type, bestMove);
             }
         }
     }
@@ -63,7 +62,18 @@ public class TranspositionTable {
         if (primaryEntry != null) {
             //if not null check if hash is correct
             if (primaryEntry.hash != hash) {
-                return retrieve(table, hash, size);
+                //If hash is not correct use other transposition table
+                TranspositionTableEntry entry = retrieve(table, hash, size);
+                if (entry != null) {
+                    //check if it has the correct hash otherwise return null
+                    if (entry.hash == hash) {
+                        return entry;
+                    } else {
+                        return null;
+                    }
+                } else {
+                    return null;
+                }
             }
             //if correct check if the depth is bigger than search depth if so just return
             if (primaryEntry.depth >= depth) {
@@ -72,14 +82,27 @@ public class TranspositionTable {
                 //if entry depth is smaller than search depth check if there is a better entry in the other transposition table
                 TranspositionTableEntry entry = retrieve(table, hash, size);
                 if (entry == null) {
-                    return retrieve(table, hash, size);
+                    return null;
                 }
                 if (entry.hash == hash) {
                     return primaryEntry.depth > entry.depth ? primaryEntry : entry;
+                } else {
+                    return null;
                 }
             }
+        } else {
+            // If there is no primary entry try to retrieve from the other one
+            TranspositionTableEntry entry = retrieve(table, hash, size);
+            if (entry != null) {
+                if (entry.hash == hash) {
+                    return entry;
+                } else {
+                    return null;
+                }
+            } else {
+                return null;
+            }
         }
-        return retrieve(table, hash, size);
     }
 
 }
