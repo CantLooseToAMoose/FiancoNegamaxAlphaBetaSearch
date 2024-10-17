@@ -84,7 +84,10 @@ public class GameClient {
             aiAgent = new IterativeAlphaBetaSearchAgentQuiescenceAndKillerMoves(bitmapFianco, Integer.parseInt(args[1]));
         } else if (whichAi == 6) {
             aiAgent = new PVSWithQuiescAndKMAndPonderingAgent(bitmapFianco, Integer.parseInt(args[1]));
+        }else if (whichAi == 7) {
+            aiAgent = new PVSWithQuiescAndKMAndPonderingAndHHWithAspirationAgent(bitmapFianco, Integer.parseInt(args[1]));
         }
+
         GameClient client = new GameClient("localhost", 12345, args[0], aiAgent);
         client.start();
     }

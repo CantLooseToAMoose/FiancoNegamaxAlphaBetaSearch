@@ -6,6 +6,7 @@ import BitBoard.MoveConversion;
 import FiancoGameEngine.Fianco;
 import FiancoGameEngine.MoveCommand;
 import search.AlphaBeta.PVSWithQuiesAndKM;
+import search.AlphaBeta.PVSWithQuiesAndKMAndHHAndAspiration;
 import search.TT.Zobrist;
 
 import java.util.ArrayList;
@@ -14,12 +15,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class PVSWithQuiescAndKMAndPonderingAgent implements IAgent {
+public class PVSWithQuiescAndKMAndPonderingAndHHWithAspirationAgent implements IAgent {
     public static final int MAX_GAME_MOVES = 6000;
 
     private BitmapFianco fianco;
     private final int player;
-    private PVSWithQuiesAndKM alphaBetaSearch;
+    private PVSWithQuiesAndKMAndHHAndAspiration alphaBetaSearch;
     private long[] board;
     private ArrayList<MoveCommand> moveHistory = new ArrayList<>();
     private long[] boardHistory = new long[MAX_GAME_MOVES];
@@ -33,24 +34,37 @@ public class PVSWithQuiescAndKMAndPonderingAgent implements IAgent {
     short[] pvLine = new short[PVSWithQuiesAndKM.MAX_NUMBER_OF_ACTUAL_DEPTH];
     private int lastIterationDepth = 0;
 
+
+    // Time management variables
+    private static final long TOTAL_GAME_TIME_NANO = 10L * 60L * 1_000_000_000L; // 10 minutes in nanoseconds
+    private long totalTimeRemaining;
+    private int movesMadeByAgent = 0;
+    private int estimatedTotalMoves = 60; // Estimated number of moves by the agent
+
+
     @Override
     public void resetBoard() {
         fianco.populateBoardBitmapsFrom2DIntArray(new Fianco().getBoardState());
         long[] player1Board = fianco.getPlayer1Board();
         long[] player2Board = fianco.getPlayer2Board();
         board = new long[]{player1Board[0], player1Board[1], player2Board[0], player2Board[1]};
-        alphaBetaSearch = new PVSWithQuiesAndKM();
+        alphaBetaSearch = new PVSWithQuiesAndKMAndHHAndAspiration();
         lastConversionMoves = new ArrayList<>();
         lastConversionMoves.add(0);
         zobristHash = 0;
         boardHistory = new long[MAX_GAME_MOVES];
         gameMoves = 0;
         boardHistory[gameMoves] = zobristHash;
+        totalTimeRemaining = TOTAL_GAME_TIME_NANO;
+        movesMadeByAgent = 0;
     }
 
     @Override
     public synchronized MoveCommand generateMove(MoveCommand move) {
-        long maxTime = 8 * 1_000_000_000L;
+        long startTime = System.nanoTime();
+        long maxTime = estimateTimeForNextMove();
+
+
         boolean isOnPVLine = false;
         if (move != null) {
             short shortMove = MoveConversion.getShortMoveFromMoveCommand(move);
@@ -147,6 +161,22 @@ public class PVSWithQuiescAndKMAndPonderingAgent implements IAgent {
             searchExecuter.shutdown();
         }
 
+        long endTime = System.nanoTime();
+        long timeTaken = endTime - startTime;
+        totalTimeRemaining -= timeTaken;
+        if (totalTimeRemaining < 0) {
+            totalTimeRemaining = 0;
+        }
+        movesMadeByAgent++;
+        movesMadeByAgent++;
+
+        // Logging for debugging
+        System.out.println("\n Time taken for move: " + timeTaken / 1_000_000 + " ms");
+        System.out.println("Total time remaining: " + totalTimeRemaining / 1_000_000_000 + " s");
+        System.out.println("Estimated moves left: " + (estimatedTotalMoves - movesMadeByAgent));
+        System.out.println("Phase weight: " + getPhaseWeight());
+        System.out.println("Max time for next move: " + maxTime / 1_000_000 + " ms");
+
         return moveCommand;
     }
 
@@ -156,6 +186,7 @@ public class PVSWithQuiescAndKMAndPonderingAgent implements IAgent {
                 System.out.println("Time is Up. Stop Alpha Beta now.");
                 alphaBetaSearch.stopSearchSoft();
                 if (!searchExecuter.awaitTermination(4, TimeUnit.SECONDS)) {
+                    alphaBetaSearch.stopSearchHard();
                     searchExecuter.shutdownNow();
                     System.out.println("Tried to shut down Pongering Search but it failed.");
                 }
@@ -168,7 +199,35 @@ public class PVSWithQuiescAndKMAndPonderingAgent implements IAgent {
         }
         short newMove = alphaBetaSearch.afterIterationBestMove;
         return newMove;
+    }
 
+    private long estimateTimeForNextMove() {
+        int estimatedMovesLeft = estimatedTotalMoves - movesMadeByAgent;
+        if (estimatedMovesLeft <= 0) {
+            estimatedMovesLeft = 1;
+        }
+        long baseMaxTime = totalTimeRemaining / estimatedMovesLeft;
+        double phaseWeight = getPhaseWeight();
+        long maxTime = (long) (baseMaxTime * phaseWeight);
+        // Set minimum maxTime per move to 1 second (1,000,000,000 nanoseconds)
+        if (maxTime < 1_000_000_000L) {
+            maxTime = 1_000_000_000L;
+        }
+        return maxTime;
+    }
+
+    private double getPhaseWeight() {
+        double fraction = (double) movesMadeByAgent / estimatedTotalMoves;
+        if (fraction < 1.0 / 3.0) {
+            // Opening phase
+            return 0.8;
+        } else if (fraction < 2.0 / 3.0) {
+            // Mid-game phase
+            return 1.2;
+        } else {
+            // Endgame phase
+            return 0.9;
+        }
     }
 
     @Override
@@ -184,16 +243,16 @@ public class PVSWithQuiescAndKMAndPonderingAgent implements IAgent {
         gameMoves--;
     }
 
-    public PVSWithQuiescAndKMAndPonderingAgent(BitmapFianco fianco, int player) {
+    public PVSWithQuiescAndKMAndPonderingAndHHWithAspirationAgent(BitmapFianco fianco, int player) {
         this.fianco = fianco;
         this.player = player;
-        this.alphaBetaSearch = new PVSWithQuiesAndKM();
+        this.alphaBetaSearch = new PVSWithQuiesAndKMAndHHAndAspiration();
         fianco.populateBoardBitmapsFrom2DIntArray(new Fianco().getBoardState());
         long[] player1Board = fianco.getPlayer1Board();
         long[] player2Board = fianco.getPlayer2Board();
         board = new long[]{player1Board[0], player1Board[1], player2Board[0], player2Board[1]};
         lastConversionMoves.add(0);
-
+        this.totalTimeRemaining = TOTAL_GAME_TIME_NANO;
     }
 
 
