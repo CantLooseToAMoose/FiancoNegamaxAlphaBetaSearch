@@ -216,6 +216,7 @@ public class PVSWithQuiesAndKMAndHHAndAspiration {
                 }
                 default -> {
                     //get Move from move Array
+
                     move = moveQueue.poll().getMove();
                     //dont search for the ttMove again
                     if (move == 0 || move == ttMove || move == pvLineMove || move == killerMove1 || move == killerMove2 || !BitMapMoveGenerator.isMoveValid(board, move, isPlayerOneTurn)) {
@@ -400,7 +401,7 @@ public class PVSWithQuiesAndKMAndHHAndAspiration {
                         short move;
                         if (currentMoveIndex == -1) {
                             move = pvLine[actualDepth];
-                            if (move == 0) {
+                            if (move == 0||!BitMapMoveGenerator.isMoveValid(board,move,isPlayerOne)) {
                                 continue;
                             }
                         } else {
@@ -419,7 +420,7 @@ public class PVSWithQuiesAndKMAndHHAndAspiration {
                                     }
                                 }
                             }
-                            if (move == 0) {
+                            if (move == 0 || !BitMapMoveGenerator.isMoveValid(board, move, isPlayerOne)) {
                                 continue;
                             }
                         }
@@ -452,6 +453,9 @@ public class PVSWithQuiesAndKMAndHHAndAspiration {
                         MoveWithStats.AddMoveWithValueToPriorityQueue(currentMoveQueue, move, value);
                         // Synchronize access to update alpha, bestScore, and bestBoard
                         synchronized (this) {
+                            if (stopHard) {
+                                break;
+                            }
                             if (value > bestScore.get()) {
                                 sharedBestMove.set(move);
                                 bestScore.set(value);

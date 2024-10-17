@@ -101,6 +101,11 @@ public class PVSWithQuiescAndKMAndPonderingAndHHWithAspirationAgent implements I
             }
             newMove = alphaBetaSearch.GetBestMoveIterativeDeepening(this.board, zobristHash, boardHistory.clone(), new short[PVSWithQuiesAndKM.MAX_NUMBER_OF_ACTUAL_DEPTH], gameMoves, lastConversionMoves.get(lastConversionMoves.size() - 1), player == 1, 1, 40, -Integer.MAX_VALUE, Integer.MAX_VALUE, maxTime);
         }
+        while(!BitMapMoveGenerator.isMoveValid(board,newMove,player==1)){
+            System.out.println("We generated a wrong move! Try again.");
+            newMove = alphaBetaSearch.GetBestMoveIterativeDeepening(this.board, zobristHash, boardHistory.clone(), new short[PVSWithQuiesAndKM.MAX_NUMBER_OF_ACTUAL_DEPTH], gameMoves, lastConversionMoves.get(lastConversionMoves.size() - 1), player == 1, 1, 40, -Integer.MAX_VALUE, Integer.MAX_VALUE, maxTime/2);
+
+        }
 
         BitMapMoveGenerator.makeOrUnmakeMoveInPlace(board, newMove, (player == 1));
         MoveCommand moveCommand = MoveConversion.getMoveCommandFromShortMove(newMove, (player == 1));
@@ -186,9 +191,12 @@ public class PVSWithQuiescAndKMAndPonderingAndHHWithAspirationAgent implements I
                 System.out.println("Time is Up. Stop Alpha Beta now.");
                 alphaBetaSearch.stopSearchSoft();
                 if (!searchExecuter.awaitTermination(4, TimeUnit.SECONDS)) {
+                    System.out.println("Tried to soft Stop Alpha Beta but failed, so try to hard stop now.");
                     alphaBetaSearch.stopSearchHard();
-                    searchExecuter.shutdownNow();
-                    System.out.println("Tried to shut down Pongering Search but it failed.");
+                    if (!searchExecuter.awaitTermination(500, TimeUnit.MILLISECONDS)) {
+                        System.out.println("Hard Stop also failed");
+                        searchExecuter.shutdownNow();
+                    }
                 }
                 searchExecuter.shutdownNow();
             }
