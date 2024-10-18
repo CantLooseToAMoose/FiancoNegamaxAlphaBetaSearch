@@ -3,6 +3,7 @@ package search.TT;
 public class TranspositionTable {
     //Transposition Table Sizes
     public static final int PRIMARY_TRANSPOSITION_TABLE_SIZE = 16_384; //Needs to be really small to optimally fit completely in Cache
+    public static final int PRIMARY_TRANSPOSITION_TABLE_SIZE_LARGE=65_536;
     public static final int TRANSPOSITION_TABLE_SIZE_4GB = 134_217_728;//4 GB
     public static final int TRANSPOSITION_TABLE_SIZE_16GB = 134_217_728 * 4; //16 GB
     public static final int TRANSPOSITION_TABLE_SIZE_8GB = 134_217_728 * 2;//8 GB

@@ -26,8 +26,8 @@ public class PVSWithQuiesAndKMAndHHAndAspiration {
     public static final int MAX_NUMBER_OF_ACTUAL_DEPTH = 3000;
     public static final int MAX_NUMBER_OF_MOVES_SINCE_LAST_CONVERSION = 15;
 
-    private static final int PRIMARY_TRANSPOSITION_TABLE_SIZE = TranspositionTable.PRIMARY_TRANSPOSITION_TABLE_SIZE;
-    private static final int TRANSPOSITION_TABLE_SIZE = TranspositionTable.TRANSPOSITION_TABLE_SIZE_8GB;
+    private static final int PRIMARY_TRANSPOSITION_TABLE_SIZE = TranspositionTable.PRIMARY_TRANSPOSITION_TABLE_SIZE_LARGE;
+    private static final int TRANSPOSITION_TABLE_SIZE = TranspositionTable.TRANSPOSITION_TABLE_SIZE_16GB;
 
     //Parralelization
     public static final int NUMBER_OF_THREADS = 2;
