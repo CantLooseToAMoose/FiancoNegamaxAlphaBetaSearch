@@ -30,7 +30,7 @@ public class PVSWithQuiesAndKM {
     private static final int TRANSPOSITION_TABLE_SIZE = TranspositionTable.TRANSPOSITION_TABLE_SIZE_8GB;
 
     //Parralelization
-    public static final int NUMBER_OF_THREADS = 2;
+    public static final int NUMBER_OF_THREADS = 1;
     public ExecutorService executor;
 
     //Evaluation Constants
@@ -371,6 +371,9 @@ public class PVSWithQuiesAndKM {
                             move = moveArray[currentMoveIndex];
                             if (move == 0) {
                                 continue;
+                            }
+                            if(!BitMapMoveGenerator.isMoveValid(board,move,isPlayerOne)){
+                                System.out.println("Move "+MoveConversion.getMoveCommandFromShortMove(move,isPlayerOne));
                             }
                         }
                         long[] boardCopy = board.clone();

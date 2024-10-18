@@ -120,7 +120,7 @@ public class BitMapMoveGenerator {
 //        BitmapFianco.ShowBitBoard(canMoveEast);
         long[] canMoveWest = AdvancedBitOps.fasterPossibleWestMovePieces(playerBoard, freeTileBitMask);
 //        System.out.println("Can Move West:");
-//        BitmapFianco.ShowBitBoard(canMoveEast);
+//        BitmapFianco.ShowBitBoard(canMoveWest);
         long[] canMoveForward;
 
         if (isPlayerOne) {

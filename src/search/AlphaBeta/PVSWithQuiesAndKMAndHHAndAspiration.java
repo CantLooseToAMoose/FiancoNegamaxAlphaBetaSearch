@@ -1,6 +1,7 @@
 package search.AlphaBeta;
 
 import BitBoard.BitMapMoveGenerator;
+import BitBoard.BitmapFianco;
 import BitBoard.MoveConversion;
 import FiancoGameEngine.MoveCommand;
 import search.Evaluation.Evaluate;
@@ -31,6 +32,7 @@ public class PVSWithQuiesAndKMAndHHAndAspiration {
     //Parralelization
     public static final int NUMBER_OF_THREADS = 2;
     public ExecutorService executor;
+    private static final Object methodLock = new Object();
 
     //Evaluation Constants
     public static final int WIN_EVAL = 1000;
@@ -58,7 +60,7 @@ public class PVSWithQuiesAndKMAndHHAndAspiration {
     //PVS
     public short[] previousPVLine = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
     private int maxActualDepth = 0;
-    private PriorityQueue<MoveWithStats> currentMoveQueue;
+
 
     //Pondering
     public int lastIterationDepth = 0;
@@ -182,7 +184,7 @@ public class PVSWithQuiesAndKMAndHHAndAspiration {
             move = moveArray[actualDepth * MAX_NUMBER_OF_MOVES + i];
             if (move != 0) {
                 numberOfActualMoves++;
-                MoveWithStats.AddMoveWithMeanToPriorityQueue(moveQueue, moveStats, move);
+                MoveWithStats.AddMoveWithMeanToPriorityQueue(moveQueue, moveStats, move, gameMoves);
             }
         }
 
@@ -289,18 +291,20 @@ public class PVSWithQuiesAndKMAndHHAndAspiration {
     }
 
     public short GetBestMoveIterativeDeepening(long[] board, long zobristHash, long[] boardHistory, short[] previousPVLine, int gameMoves, int lastConversionMove, boolean isPlayerOne, int minDepth, int maxDepth, int alpha, int beta, long maxTime) {
-        System.out.println("Evaluation of this Position: " + Evaluate.combinedEvaluate(board, isPlayerOne));
-        stopSoft = false;
-        stopHard = false;
+        synchronized (methodLock) {
+            long[] persistentBoard = board.clone();
+            System.out.println("Evaluation of this Position: " + Evaluate.combinedEvaluate(board, isPlayerOne));
+            stopSoft = false;
+            stopHard = false;
 
 
-        //Update for potential new Opponent Move
-        this.boardHistory = boardHistory;
+            //Update for potential new Opponent Move
+            this.boardHistory = boardHistory;
 
-        //Reset debug values
-        long startTime = System.nanoTime();
-        long passedTime = 0;
-        nodes.reset();
+            //Reset debug values
+            long startTime = System.nanoTime();
+            long passedTime = 0;
+            nodes.reset();
 //        basicTTPruning.reset();
 //        exactTTPruning.reset();
 //        alphaBetaPruning.reset();
@@ -308,257 +312,271 @@ public class PVSWithQuiesAndKMAndHHAndAspiration {
 //        ttEntriesFound.reset();
 
 
-        //Reset more values
-        guess = 0;
-        afterIterationBestMove = 0;
-        int afterIterationBestScore = 0;
-        short[] afterIterationBestPVLine = previousPVLine.clone();
-        AtomicInteger bestScore = new AtomicInteger(-Integer.MAX_VALUE);
-        short[] moveArray = new short[MAX_NUMBER_OF_MOVES * MAX_NUMBER_OF_ACTUAL_DEPTH];
+            //Reset more values
+            guess = 0;
+            afterIterationBestMove = 0;
+            int afterIterationBestScore = 0;
+            short[] afterIterationBestPVLine = previousPVLine.clone();
+            AtomicInteger bestScore = new AtomicInteger(-Integer.MAX_VALUE);
+            short[] moveArray = new short[MAX_NUMBER_OF_MOVES * MAX_NUMBER_OF_ACTUAL_DEPTH];
 
-        //Moves
-        int maxCaptureMovesAdded = BitMapMoveGenerator.populateShortArrayWithCaptureMoves(board, isPlayerOne, moveArray, 0);
-        int maxNumberOfMovesForAllTypes;
-        if (maxCaptureMovesAdded == 0) {
-            maxNumberOfMovesForAllTypes = Math.max(maxCaptureMovesAdded, BitMapMoveGenerator.populateShortArrayWithQuietMoves(board, moveArray, isPlayerOne, 0));
-        } else {
-            maxNumberOfMovesForAllTypes = maxCaptureMovesAdded;
-        }
-        //Reset Killer moves
-        this.killerMoves = new short[MAX_NUMBER_OF_ACTUAL_DEPTH][2];
-        //Reset History Heuristic
-        moveStats = new MoveStats[Short.MAX_VALUE];
+            //Moves
+            int maxCaptureMovesAdded = BitMapMoveGenerator.populateShortArrayWithCaptureMoves(persistentBoard, isPlayerOne, moveArray, 0);
+            int maxNumberOfMovesForAllTypes;
+            if (maxCaptureMovesAdded == 0) {
+                maxNumberOfMovesForAllTypes = Math.max(maxCaptureMovesAdded, BitMapMoveGenerator.populateShortArrayWithQuietMoves(persistentBoard, moveArray, isPlayerOne, 0));
+            } else {
+                maxNumberOfMovesForAllTypes = maxCaptureMovesAdded;
+            }
+            //Reset Killer moves
+            this.killerMoves = new short[MAX_NUMBER_OF_ACTUAL_DEPTH][2];
+            //Reset History Heuristic
+            moveStats = new MoveStats[Short.MAX_VALUE];
 
 
-        if (maxCaptureMovesAdded == 1) {
-            System.out.println("Only 1 Move, so take this one.");
-            if (moveArray[0] != 0) {
-                this.previousPVLine = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
-                afterIterationBestMove = moveArray[0];
-                afterIterationBestPVLine = previousPVLine.clone();
-                TranspositionTableEntry entry = TranspositionTable.retrieve(primaryTranspositionTable, transpositionTable, Zobrist.updateHash(zobristHash, afterIterationBestMove, isPlayerOne), TranspositionTable.PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, minDepth);
-                afterIterationBestPVLine[0] = afterIterationBestMove;
-                if (entry != null) {
-                    long[] boardClone = board.clone();
-                    BitMapMoveGenerator.makeOrUnmakeMoveInPlace(boardClone, entry.bestMove, !isPlayerOne);
-                    if (BitMapMoveGenerator.isMoveValid(boardClone, entry.bestMove, !isPlayerOne)) {
-                        afterIterationBestPVLine[1] = entry.bestMove;
+            if (maxCaptureMovesAdded == 1) {
+                System.out.println("Only 1 Move, so take this one.");
+                if (moveArray[0] != 0) {
+                    this.previousPVLine = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
+                    afterIterationBestMove = moveArray[0];
+                    afterIterationBestPVLine = previousPVLine.clone();
+                    TranspositionTableEntry entry = TranspositionTable.retrieve(primaryTranspositionTable, transpositionTable, Zobrist.updateHash(zobristHash, afterIterationBestMove, isPlayerOne), TranspositionTable.PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, minDepth);
+                    afterIterationBestPVLine[0] = afterIterationBestMove;
+                    if (entry != null) {
+                        long[] boardClone = persistentBoard.clone();
+                        BitMapMoveGenerator.makeOrUnmakeMoveInPlace(boardClone, entry.bestMove, !isPlayerOne);
+                        if (BitMapMoveGenerator.isMoveValid(boardClone, entry.bestMove, !isPlayerOne)) {
+                            afterIterationBestPVLine[1] = entry.bestMove;
+                        }
                     }
+                    return moveArray[0];
                 }
-                return moveArray[0];
-            }
-            if (moveArray[1] != 0) {
-                this.previousPVLine = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
-                afterIterationBestMove = moveArray[1];
-                afterIterationBestPVLine = previousPVLine.clone();
-                TranspositionTableEntry entry = TranspositionTable.retrieve(primaryTranspositionTable, transpositionTable, Zobrist.updateHash(zobristHash, afterIterationBestMove, isPlayerOne), TranspositionTable.PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, minDepth);
-                afterIterationBestPVLine[0] = afterIterationBestMove;
-                if (entry != null) {
-                    long[] boardClone = board.clone();
-                    BitMapMoveGenerator.makeOrUnmakeMoveInPlace(boardClone, entry.bestMove, !isPlayerOne);
-                    if (BitMapMoveGenerator.isMoveValid(boardClone, entry.bestMove, !isPlayerOne)) {
-                        afterIterationBestPVLine[1] = entry.bestMove;
+                if (moveArray[1] != 0) {
+                    this.previousPVLine = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
+                    afterIterationBestMove = moveArray[1];
+                    afterIterationBestPVLine = previousPVLine.clone();
+                    TranspositionTableEntry entry = TranspositionTable.retrieve(primaryTranspositionTable, transpositionTable, Zobrist.updateHash(zobristHash, afterIterationBestMove, isPlayerOne), TranspositionTable.PRIMARY_TRANSPOSITION_TABLE_SIZE, TRANSPOSITION_TABLE_SIZE, minDepth);
+                    afterIterationBestPVLine[0] = afterIterationBestMove;
+                    if (entry != null) {
+                        long[] boardClone = persistentBoard.clone();
+                        BitMapMoveGenerator.makeOrUnmakeMoveInPlace(boardClone, entry.bestMove, !isPlayerOne);
+                        if (BitMapMoveGenerator.isMoveValid(boardClone, entry.bestMove, !isPlayerOne)) {
+                            afterIterationBestPVLine[1] = entry.bestMove;
+                        }
                     }
+                    return moveArray[1];
                 }
-                return moveArray[1];
             }
-        }
-        // Reinitialize
-        this.transpositionTable = new TranspositionTableEntry[TRANSPOSITION_TABLE_SIZE];
-        // Previous PriorityQueue
-        this.currentMoveQueue = null;
+            // Reinitialize
+            this.transpositionTable = new TranspositionTableEntry[TRANSPOSITION_TABLE_SIZE];
+            // Previous PriorityQueue
+            PriorityQueue<MoveWithStats> currentMoveQueue = new PriorityQueue<>();
 
-        for (int depth = minDepth; depth <= maxDepth; depth++) {
-            if (stopSoft) {
-                break;
-            }
-            PriorityQueue<MoveWithStats> previousPriorityQueue = currentMoveQueue;
-            currentMoveQueue = new PriorityQueue<>();
-            System.out.println("");
-            System.out.println("Starting search at depth: " + depth);
+            for (int depth = minDepth; depth <= maxDepth; depth++) {
+                if (stopSoft) {
+                    break;
+                }
+                PriorityQueue<MoveWithStats> previousPriorityQueue = currentMoveQueue;
+                currentMoveQueue = new PriorityQueue<>();
+                System.out.println("");
+                System.out.println("Starting search at depth: " + depth);
 
 
-            // Reset shared variables for this depth
-            AtomicInteger sharedBestMove = new AtomicInteger(0);
-            bestScore.set(-Integer.MAX_VALUE);
-            short[] pvLine = afterIterationBestPVLine.clone();
-            AtomicInteger moveIndex = new AtomicInteger(-1);  // Track move index for parallel threads
-            AtomicInteger sharedAlpha = new AtomicInteger(alpha);
+                // Reset shared variables for this depth
+                AtomicInteger sharedBestMove = new AtomicInteger(0);
+                bestScore.set(-Integer.MAX_VALUE);
+                short[] pvLine = afterIterationBestPVLine.clone();
+                AtomicInteger moveIndex = new AtomicInteger(-1);  // Track move index for parallel threads
+                AtomicInteger sharedAlpha = new AtomicInteger(alpha);
 
-            // Executor for parallelization
-            executor = Executors.newFixedThreadPool(NUMBER_OF_THREADS);
+                // Executor for parallelization
+                executor = Executors.newFixedThreadPool(NUMBER_OF_THREADS);
 
-            int iterativeDepth = depth;
-            int actualDepth = 0;
-            Runnable task = () -> {
-                try {
-                    while (true) {
-                        int currentMoveIndex = moveIndex.getAndIncrement();  // Atomically get next move
-                        if (currentMoveIndex >= maxNumberOfMovesForAllTypes * 5) break;  // No more moves to process
-                        if (stopSoft) {
-                            break;
-                        }
-                        short move;
-                        if (currentMoveIndex == -1) {
-                            move = pvLine[actualDepth];
-                            if (move == 0||!BitMapMoveGenerator.isMoveValid(board,move,isPlayerOne)) {
-                                continue;
-                            }
-                        } else {
-                            if (previousPriorityQueue == null) {
-                                move = moveArray[currentMoveIndex];
-                            } else {
-                                synchronized (previousPriorityQueue) {
-                                    if (previousPriorityQueue.isEmpty()) {
-                                        break;
-                                    } else {
-                                        MoveWithStats moveWithStats = previousPriorityQueue.poll();
-                                        if (moveWithStats == null) {
-                                            break; // or handle accordingly
-                                        }
-                                        move = moveWithStats.getMove();
-                                    }
-                                }
-                            }
-                            if (move == 0 || !BitMapMoveGenerator.isMoveValid(board, move, isPlayerOne)) {
-                                continue;
-                            }
-                        }
-                        long[] boardCopy = board.clone();
-                        long[] boardHistoryClone = this.boardHistory.clone();
-                        long zobristHashClone = Zobrist.updateHash(zobristHash, move, isPlayerOne);
-
-                        boardHistoryClone[gameMoves + actualDepth] = zobristHash;
-                        BitMapMoveGenerator.makeOrUnmakeMoveInPlace(boardCopy, move, isPlayerOne);
-                        short[] childPV = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
-                        //Dont do Aspiration Search Later in The Game because it might not be True Anymore
-                        int value;
-                        if (gameMoves > MAX_GAME_MOVES_FOR_ASPIRATION) {
-                            value = -AlphaBeta(boardCopy, zobristHashClone, !isPlayerOne, iterativeDepth - 1, actualDepth + 1, boardHistoryClone, gameMoves, lastConversionMove, moveArray.clone(), -beta, -sharedAlpha.get(), childPV);
-                        } else {
-                            //Do aspiration Search
-                            int alphaGuess = Math.max(guess - MAX_ASPIRATION_DELTA_ASSUMPTION, sharedAlpha.get());
-                            int betaGuess = guess + MAX_ASPIRATION_DELTA_ASSUMPTION;
-                            value = -AlphaBeta(boardCopy, zobristHashClone, !isPlayerOne, iterativeDepth - 1, actualDepth + 1, boardHistoryClone, gameMoves, lastConversionMove, moveArray.clone(), -betaGuess, -alphaGuess, childPV);
-                            if (value >= betaGuess) {
-                                alphaGuess = value;
-                                betaGuess = Integer.MAX_VALUE;
-                                value = -AlphaBeta(boardCopy, zobristHashClone, !isPlayerOne, iterativeDepth - 1, actualDepth + 1, boardHistoryClone, gameMoves, lastConversionMove, moveArray.clone(), -betaGuess, -alphaGuess, childPV);
-                            } else if (value <= alphaGuess) {
-                                alphaGuess = sharedAlpha.get();
-                                betaGuess = value;
-                                value = -AlphaBeta(boardCopy, zobristHashClone, !isPlayerOne, iterativeDepth - 1, actualDepth + 1, boardHistoryClone, gameMoves, lastConversionMove, moveArray.clone(), -betaGuess, -alphaGuess, childPV);
-                            }
-                        }
-                        MoveWithStats.AddMoveWithValueToPriorityQueue(currentMoveQueue, move, value);
-                        // Synchronize access to update alpha, bestScore, and bestBoard
-                        synchronized (this) {
-                            if (stopHard) {
+                int iterativeDepth = depth;
+                int actualDepth = 0;
+                PriorityQueue<MoveWithStats> finalCurrentMoveQueue = currentMoveQueue;
+                Runnable task = () -> {
+                    try {
+                        while (true) {
+                            int currentMoveIndex = moveIndex.getAndIncrement();  // Atomically get next move
+                            if (currentMoveIndex >= maxNumberOfMovesForAllTypes * 5) break;  // No more moves to process
+                            if (stopSoft) {
                                 break;
                             }
-                            if (value > bestScore.get()) {
-                                sharedBestMove.set(move);
-                                bestScore.set(value);
-                                pvLine[actualDepth] = move;  // Update the principal variation
-                                System.arraycopy(childPV, actualDepth + 1, pvLine, actualDepth + 1, MAX_NUMBER_OF_ACTUAL_DEPTH - actualDepth - 1);
+                            short move;
+                            if (currentMoveIndex == -1) {
+                                move = pvLine[actualDepth];
+                                if (move == 0 || !BitMapMoveGenerator.isMoveValid(persistentBoard, move, isPlayerOne)) {
+                                    continue;
+                                }
+                            } else {
+                                if (previousPriorityQueue.isEmpty()) {
+                                    move = moveArray[currentMoveIndex];
+                                } else {
+                                    synchronized (previousPriorityQueue) {
+                                        if (previousPriorityQueue.isEmpty()) {
+                                            break;
+                                        } else {
+                                            MoveWithStats moveWithStats = previousPriorityQueue.poll();
+                                            if (moveWithStats == null) {
+                                                break; // or handle accordingly
+                                            }
+                                            move = moveWithStats.getMove();
+                                            if (!BitMapMoveGenerator.isMoveValid(persistentBoard, move, isPlayerOne)) {
+                                                BitmapFianco.ShowBitBoard(persistentBoard);
+                                                System.out.println("Move from Priority Queue is wrong." + MoveConversion.getMoveCommandFromShortMove(move, isPlayerOne));
+                                            }
+                                        }
+                                    }
+                                }
+                                if (move == 0 || !BitMapMoveGenerator.isMoveValid(persistentBoard, move, isPlayerOne)) {
+                                    continue;
+                                }
                             }
-                            if (bestScore.get() > sharedAlpha.get()) {
-                                sharedAlpha.set(bestScore.get());
+                            if (!BitMapMoveGenerator.isMoveValid(persistentBoard, move, isPlayerOne)) {
+                                continue;
+                            }
+                            long[] boardCopy = persistentBoard.clone();
+                            long[] boardHistoryClone = this.boardHistory.clone();
+                            long zobristHashClone = Zobrist.updateHash(zobristHash, move, isPlayerOne);
+
+                            boardHistoryClone[gameMoves + actualDepth] = zobristHash;
+                            BitMapMoveGenerator.makeOrUnmakeMoveInPlace(boardCopy, move, isPlayerOne);
+                            short[] childPV = new short[MAX_NUMBER_OF_ACTUAL_DEPTH];
+                            //Dont do Aspiration Search Later in The Game because it might not be True Anymore
+                            int value;
+                            if (gameMoves > MAX_GAME_MOVES_FOR_ASPIRATION) {
+                                value = -AlphaBeta(boardCopy, zobristHashClone, !isPlayerOne, iterativeDepth - 1, actualDepth + 1, boardHistoryClone, gameMoves, lastConversionMove, moveArray.clone(), -beta, -sharedAlpha.get(), childPV);
+                            } else {
+                                //Do aspiration Search
+                                int alphaGuess = Math.max(guess - MAX_ASPIRATION_DELTA_ASSUMPTION, sharedAlpha.get());
+                                int betaGuess = guess + MAX_ASPIRATION_DELTA_ASSUMPTION;
+                                value = -AlphaBeta(boardCopy, zobristHashClone, !isPlayerOne, iterativeDepth - 1, actualDepth + 1, boardHistoryClone, gameMoves, lastConversionMove, moveArray.clone(), -betaGuess, -alphaGuess, childPV);
+                                if (value >= betaGuess) {
+                                    alphaGuess = value;
+                                    betaGuess = Integer.MAX_VALUE;
+                                    value = -AlphaBeta(boardCopy, zobristHashClone, !isPlayerOne, iterativeDepth - 1, actualDepth + 1, boardHistoryClone, gameMoves, lastConversionMove, moveArray.clone(), -betaGuess, -alphaGuess, childPV);
+                                } else if (value <= alphaGuess) {
+                                    alphaGuess = sharedAlpha.get();
+                                    betaGuess = value;
+                                    value = -AlphaBeta(boardCopy, zobristHashClone, !isPlayerOne, iterativeDepth - 1, actualDepth + 1, boardHistoryClone, gameMoves, lastConversionMove, moveArray.clone(), -betaGuess, -alphaGuess, childPV);
+                                }
+                            }
+                            if (!BitMapMoveGenerator.isMoveValid(persistentBoard, move, isPlayerOne)) {
+                                System.out.println("Move is not valid");
+                            } else {
+                                MoveWithStats.AddMoveWithValueToPriorityQueue(finalCurrentMoveQueue, move, value, gameMoves);
+                            }
+                            // Synchronize access to update alpha, bestScore, and bestBoard
+                            synchronized (this) {
+                                if (stopHard) {
+                                    break;
+                                }
+                                if (value > bestScore.get()) {
+                                    sharedBestMove.set(move);
+                                    bestScore.set(value);
+                                    pvLine[actualDepth] = move;  // Update the principal variation
+                                    System.arraycopy(childPV, actualDepth + 1, pvLine, actualDepth + 1, MAX_NUMBER_OF_ACTUAL_DEPTH - actualDepth - 1);
+                                }
+                                if (bestScore.get() > sharedAlpha.get()) {
+                                    sharedAlpha.set(bestScore.get());
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                };
+
+                // Submit parallel tasks
+                for (int i = 0; i < NUMBER_OF_THREADS; i++) {
+                    executor.submit(task);
+                }
+
+                // Wait for threads to complete
+                executor.shutdown();
+
+                //Wait for Iteration to finish. If Iteration finishes succesfully the after Iteration Best move and Score is stored.
+                //When the last Iteration gets cancelled due to time. Check if you found a better Move and use that instead.
+                try {
+                    if (passedTime == 0) {
+                        if (!executor.awaitTermination(maxTime, TimeUnit.NANOSECONDS)) {
+                            executor.shutdownNow();
+                            break;
+                        } else {
+                            if (!(bestScore.get() == -Integer.MAX_VALUE) && !stopHard && moveIndex.get() >= 4) {
+                                afterIterationBestScore = bestScore.get();
+                                afterIterationBestMove = (short) sharedBestMove.get();
+                                afterIterationBestPVLine = pvLine.clone();
+                                this.previousPVLine = afterIterationBestPVLine.clone();
+                                lastIterationDepth = iterativeDepth;
+                            }
+                        }
+                    } else {
+                        if (!executor.awaitTermination(maxTime - passedTime, TimeUnit.NANOSECONDS)) {
+                            executor.shutdownNow();
+                            break;
+                        } else {
+                            if (!(bestScore.get() == -Integer.MAX_VALUE) && !stopHard && moveIndex.get() >= 4) {
+                                afterIterationBestScore = bestScore.get();
+                                afterIterationBestMove = (short) sharedBestMove.get();
+                                afterIterationBestPVLine = pvLine.clone();
+                                this.previousPVLine = afterIterationBestPVLine.clone();
+                                lastIterationDepth = iterativeDepth;
                             }
                         }
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    System.out.println("Alpha Beta Search got interrupted.");
+                    if (!(bestScore.get() == -Integer.MAX_VALUE) && !stopHard && moveIndex.get() >= 4) {
+                        afterIterationBestScore = bestScore.get();
+                        afterIterationBestMove = (short) sharedBestMove.get();
+                        afterIterationBestPVLine = pvLine.clone();
+                        this.previousPVLine = afterIterationBestPVLine.clone();
+                        lastIterationDepth = iterativeDepth;
+                    }
+                    executor.shutdownNow();
+                    Thread.currentThread().interrupt();
+                    break;
                 }
-            };
 
-            // Submit parallel tasks
-            for (int i = 0; i < NUMBER_OF_THREADS; i++) {
-                executor.submit(task);
+                // Output results of the current depth
+
+                System.out.println("Depth: " + depth + " completed. Best move: " + afterIterationBestMove + " with score: " + afterIterationBestScore);
+                printPVLine(pvLine, depth, isPlayerOne);
+
+
+                //Aspiration Search
+                guess = afterIterationBestScore;
+                currentMoveQueue = finalCurrentMoveQueue;
+
+
+                passedTime = System.nanoTime() - startTime;
             }
 
-            // Wait for threads to complete
-            executor.shutdown();
 
-            //Wait for Iteration to finish. If Iteration finishes succesfully the after Iteration Best move and Score is stored.
-            //When the last Iteration gets cancelled due to time. Check if you found a better Move and use that instead.
-            try {
-                if (passedTime == 0) {
-                    if (!executor.awaitTermination(maxTime, TimeUnit.NANOSECONDS)) {
-                        executor.shutdownNow();
-                        break;
-                    } else {
-                        if (!(bestScore.get() == -Integer.MAX_VALUE) && !stopHard && moveIndex.get() >= 4) {
-                            afterIterationBestScore = bestScore.get();
-                            afterIterationBestMove = (short) sharedBestMove.get();
-                            afterIterationBestPVLine = pvLine.clone();
-                            this.previousPVLine = afterIterationBestPVLine.clone();
-                            lastIterationDepth = iterativeDepth;
-                        }
-                    }
-                } else {
-                    if (!executor.awaitTermination(maxTime - passedTime, TimeUnit.NANOSECONDS)) {
-                        executor.shutdownNow();
-                        break;
-                    } else {
-                        if (!(bestScore.get() == -Integer.MAX_VALUE) && !stopHard && moveIndex.get() >= 4) {
-                            afterIterationBestScore = bestScore.get();
-                            afterIterationBestMove = (short) sharedBestMove.get();
-                            afterIterationBestPVLine = pvLine.clone();
-                            this.previousPVLine = afterIterationBestPVLine.clone();
-                            lastIterationDepth = iterativeDepth;
-                        }
-                    }
-                }
-            } catch (InterruptedException e) {
-                System.out.println("Alpha Beta Search got interrupted.");
-                if (!(bestScore.get() == -Integer.MAX_VALUE) && !stopHard && moveIndex.get() >= 4) {
-                    afterIterationBestScore = bestScore.get();
-                    afterIterationBestMove = (short) sharedBestMove.get();
-                    afterIterationBestPVLine = pvLine.clone();
-                    this.previousPVLine = afterIterationBestPVLine.clone();
-                    lastIterationDepth = iterativeDepth;
-                }
-                executor.shutdownNow();
-                Thread.currentThread().interrupt();
-                break;
-            }
-
-            // Output results of the current depth
-
-            System.out.println("Depth: " + depth + " completed. Best move: " + afterIterationBestMove + " with score: " + afterIterationBestScore);
-            printPVLine(pvLine, depth, isPlayerOne);
-
-
-            //Aspiration Search
-            guess = afterIterationBestScore;
-
-
-            passedTime = System.nanoTime() - startTime;
-        }
-
-
-        long endTime = System.nanoTime();
-        System.out.println("");
-        System.out.println("Nodes: " + nodes.sum());
+            long endTime = System.nanoTime();
+            System.out.println("");
+            System.out.println("Nodes: " + nodes.sum());
 //        System.out.println("Transposition Entries found: " + ttEntriesFound.sum() + ". Percent of Total nodes: " + (float) ttEntriesFound.sum() / nodes.sum() * 100 + "%");
 //        System.out.println("Transposition Table Collision: " + ttHashCollision.sum() + ". Percent of entries found: " + (float) ttHashCollision.sum() / ttEntriesFound.sum() * 100 + "%");
 //        System.out.println("Alpha Beta Pruning: " + alphaBetaPruning.sum() + ". Percent of Total nodes: " + (float) alphaBetaPruning.sum() / nodes.sum() * 100 + "%");
 //        System.out.println("Transposition Table Exact Value Pruning: " + exactTTPruning.sum() + ". Percent of correct entries found: " + (float) exactTTPruning.sum() / (ttEntriesFound.sum() - ttHashCollision.sum()) * 100 + "%");
 //        System.out.println("Transposition Table Alpha Beta Pruning: " + basicTTPruning.sum() + ". Percent of correct entries found: " + (float) basicTTPruning.sum() / (ttEntriesFound.sum() - ttHashCollision.sum()) * 100 + "%");
-        System.out.println("Max Actual Depth: " + maxActualDepth);
+            System.out.println("Max Actual Depth: " + maxActualDepth);
 
-        System.out.println("Time: " + (endTime - startTime) / 1_000_000_000.0 + "s");
-        System.out.println("Nodes per second: " + nodes.sum() / ((endTime - startTime) / 1_000_000_000.0));
-        // Final results after iterative deepening
-        System.out.println("Final Best Move:" + afterIterationBestMove);
-        System.out.println("Final Best Score: " + afterIterationBestScore);
+            System.out.println("Time: " + (endTime - startTime) / 1_000_000_000.0 + "s");
+            System.out.println("Nodes per second: " + nodes.sum() / ((endTime - startTime) / 1_000_000_000.0));
+            // Final results after iterative deepening
+            System.out.println("Final Best Move:" + afterIterationBestMove);
+            System.out.println("Final Best Score: " + afterIterationBestScore);
 
-        if (afterIterationBestScore == -Integer.MAX_VALUE) {
-            System.out.println("Search !failed! return first generated Move.");
-            return moveArray[0];
+            if (afterIterationBestScore == -Integer.MAX_VALUE) {
+                System.out.println("Search !failed! return first generated Move.");
+                return moveArray[0];
+            }
+            return afterIterationBestMove;
         }
-        return afterIterationBestMove;
     }
 
     public void stopSearchSoft() {
