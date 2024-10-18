@@ -36,7 +36,7 @@ public class PVSWithQuiescAndKMAndPonderingAndHHWithAspirationAgent implements I
 
 
     // Time management variables
-    private static final long TOTAL_GAME_TIME_NANO = 10L * 60L * 1_000_000_000L; // 10 minutes in nanoseconds
+    private static final long TOTAL_GAME_TIME_NANO = 1L * 60L * 1_000_000_000L; // 10 minutes in nanoseconds
     private long totalTimeRemaining;
     private int movesMadeByAgent = 0;
     private int estimatedTotalMoves = 60; // Estimated number of moves by the agent
@@ -228,13 +228,13 @@ public class PVSWithQuiescAndKMAndPonderingAndHHWithAspirationAgent implements I
         double fraction = (double) movesMadeByAgent / estimatedTotalMoves;
         if (fraction < 1.0 / 3.0) {
             // Opening phase
-            return 0.8;
+            return 0.9;
         } else if (fraction < 2.0 / 3.0) {
             // Mid-game phase
             return 1.2;
         } else {
             // Endgame phase
-            return 0.9;
+            return 0.8;
         }
     }
 
