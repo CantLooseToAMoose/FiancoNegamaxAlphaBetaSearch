@@ -86,7 +86,7 @@ public class MoveCommand {
 
         // update the boardstate by moving the piece backwards
         int movedPiece = boardState[to_row][to_col];
-        boardState[from_row][from_col] = movedPiece;
+        boardState[from_row][from_col] = player;
         boardState[to_row][to_col] = 0;
 
         //if a piece was captured through diagonal movement replace the captured piece
@@ -98,7 +98,6 @@ public class MoveCommand {
             } else {
                 boardState[from_row + delta_row / 2][from_col + delta_col / 2] = 1;
             }
-
         }
         fianco.setBoardState(boardState);
     }

@@ -36,18 +36,18 @@ public class PVSWithQuiescAndKMAndPonderingAndHHWithAspirationAgent implements I
 
 
     // Time management variables
-    private static final long TOTAL_GAME_TIME_NANO = 1L * 60L * 1_000_000_000L; // 10 minutes in nanoseconds
+    private static final long TOTAL_GAME_TIME_NANO = 10L * 60L * 1_000_000_000L; // 10 minutes in nanoseconds
     private long totalTimeRemaining;
     private int movesMadeByAgent = 0;
-    private int estimatedTotalMoves = 60; // Estimated number of moves by the agent
+    private int estimatedTotalMoves = 70; // Estimated number of moves by the agent
 
 
     @Override
-    public void resetBoard() {
-        fianco.populateBoardBitmapsFrom2DIntArray(new Fianco().getBoardState());
+    public void resetBoard(int[][] board) {
+        fianco.populateBoardBitmapsFrom2DIntArray(board);
         long[] player1Board = fianco.getPlayer1Board();
         long[] player2Board = fianco.getPlayer2Board();
-        board = new long[]{player1Board[0], player1Board[1], player2Board[0], player2Board[1]};
+        this.board = new long[]{player1Board[0], player1Board[1], player2Board[0], player2Board[1]};
         alphaBetaSearch = new PVSWithQuiesAndKMAndHHAndAspiration();
         lastConversionMoves = new ArrayList<>();
         lastConversionMoves.add(0);
@@ -101,9 +101,9 @@ public class PVSWithQuiescAndKMAndPonderingAndHHWithAspirationAgent implements I
             }
             newMove = alphaBetaSearch.GetBestMoveIterativeDeepening(this.board, zobristHash, boardHistory.clone(), new short[PVSWithQuiesAndKM.MAX_NUMBER_OF_ACTUAL_DEPTH], gameMoves, lastConversionMoves.get(lastConversionMoves.size() - 1), player == 1, 1, 40, -Integer.MAX_VALUE, Integer.MAX_VALUE, maxTime);
         }
-        while(!BitMapMoveGenerator.isMoveValid(board,newMove,player==1)){
+        while (!BitMapMoveGenerator.isMoveValid(board, newMove, player == 1)) {
             System.out.println("We generated a wrong move! Try again.");
-            newMove = alphaBetaSearch.GetBestMoveIterativeDeepening(this.board, zobristHash, boardHistory.clone(), new short[PVSWithQuiesAndKM.MAX_NUMBER_OF_ACTUAL_DEPTH], gameMoves, lastConversionMoves.get(lastConversionMoves.size() - 1), player == 1, 1, 40, -Integer.MAX_VALUE, Integer.MAX_VALUE, maxTime/2);
+            newMove = alphaBetaSearch.GetBestMoveIterativeDeepening(this.board, zobristHash, boardHistory.clone(), new short[PVSWithQuiesAndKM.MAX_NUMBER_OF_ACTUAL_DEPTH], gameMoves, lastConversionMoves.get(lastConversionMoves.size() - 1), player == 1, 1, 40, -Integer.MAX_VALUE, Integer.MAX_VALUE, maxTime / 2);
 
         }
 
@@ -172,7 +172,6 @@ public class PVSWithQuiescAndKMAndPonderingAndHHWithAspirationAgent implements I
         if (totalTimeRemaining < 0) {
             totalTimeRemaining = 0;
         }
-        movesMadeByAgent++;
         movesMadeByAgent++;
 
         // Logging for debugging

@@ -11,7 +11,7 @@ import java.net.Socket;
 public class GameClient {
     private static final String movePrefix = "Your move:";
     private static final String undoPrefix = "Undo";
-    private static final String restartPrefix = "Restart";
+    private static final String restartPrefix = "Restart: ";
 
     private IAgent aiAgent;
     private Socket socket;
@@ -45,7 +45,9 @@ public class GameClient {
                 } else if (serverMessage.startsWith(undoPrefix)) {
                     aiAgent.undoMove();
                 } else if (serverMessage.startsWith(restartPrefix)) {
-                    aiAgent.resetBoard();
+                    String boardString = serverMessage.substring(restartPrefix.length()); //Get only the Boardstate from Message
+                    int[][] board = MessageLib.convertBoardStringToArray(boardString);// Convert to right Datatype
+                    aiAgent.resetBoard(board);
                 }
                 Thread.sleep(50);
                 System.gc();
@@ -84,7 +86,7 @@ public class GameClient {
             aiAgent = new IterativeAlphaBetaSearchAgentQuiescenceAndKillerMoves(bitmapFianco, Integer.parseInt(args[1]));
         } else if (whichAi == 6) {
             aiAgent = new PVSWithQuiescAndKMAndPonderingAgent(bitmapFianco, Integer.parseInt(args[1]));
-        }else if (whichAi == 7) {
+        } else if (whichAi == 7) {
             aiAgent = new PVSWithQuiescAndKMAndPonderingAndHHWithAspirationAgent(bitmapFianco, Integer.parseInt(args[1]));
         }
 

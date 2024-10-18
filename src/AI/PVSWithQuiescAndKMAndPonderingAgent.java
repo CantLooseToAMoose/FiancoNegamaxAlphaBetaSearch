@@ -34,11 +34,11 @@ public class PVSWithQuiescAndKMAndPonderingAgent implements IAgent {
     private int lastIterationDepth = 0;
 
     @Override
-    public void resetBoard() {
-        fianco.populateBoardBitmapsFrom2DIntArray(new Fianco().getBoardState());
+    public void resetBoard(int[][] board) {
+        fianco.populateBoardBitmapsFrom2DIntArray(board);
         long[] player1Board = fianco.getPlayer1Board();
         long[] player2Board = fianco.getPlayer2Board();
-        board = new long[]{player1Board[0], player1Board[1], player2Board[0], player2Board[1]};
+        this.board = new long[]{player1Board[0], player1Board[1], player2Board[0], player2Board[1]};
         alphaBetaSearch = new PVSWithQuiesAndKM();
         lastConversionMoves = new ArrayList<>();
         lastConversionMoves.add(0);

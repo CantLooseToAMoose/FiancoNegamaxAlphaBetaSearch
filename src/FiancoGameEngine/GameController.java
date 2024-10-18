@@ -42,10 +42,10 @@ public class GameController {
         }
         if (calledRestart) {
             if (gameServer.isPlayer1Connected()) {
-                gameServer.callRestartOnAiPlayer(gameServer.getPlayer1Socket(), "player1");
+                gameServer.callRestartOnAiPlayer(gameServer.getPlayer1Socket(), "player1", getBoardState());
             }
             if (gameServer.isPlayer2Connected()) {
-                gameServer.callRestartOnAiPlayer(gameServer.getPlayer2Socket(), "player2");
+                gameServer.callRestartOnAiPlayer(gameServer.getPlayer2Socket(), "player2", getBoardState());
             }
             calledRestart = false;
             return;

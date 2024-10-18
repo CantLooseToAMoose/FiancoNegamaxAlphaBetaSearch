@@ -124,13 +124,13 @@ public class GameServer {
     }
 
 
-    public void callRestartOnAiPlayer(Socket playerSocket, String playerId) {
+    public void callRestartOnAiPlayer(Socket playerSocket, String playerId, int[][] board) {
 //        System.out.println("getMoveFromPlayer called for: " + playerId);
         if (playerSocket != null && !playerSocket.isClosed()) {
             try {
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter(playerSocket.getOutputStream()));
 //                System.out.println("Send Boardstate" + boardState + "  to Player: " + playerId);
-                out.write("Restart \n");
+                out.write("Restart: " + MessageLib.convertBoardArrayToString(board));
                 out.flush();
             } catch (IOException e) {
                 e.printStackTrace();
