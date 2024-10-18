@@ -130,7 +130,7 @@ public class GameServer {
             try {
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter(playerSocket.getOutputStream()));
 //                System.out.println("Send Boardstate" + boardState + "  to Player: " + playerId);
-                out.write("Restart: " + MessageLib.convertBoardArrayToString(board));
+                out.write("Restart: " + MessageLib.convertBoardArrayToString(board) + "\n");
                 out.flush();
             } catch (IOException e) {
                 e.printStackTrace();

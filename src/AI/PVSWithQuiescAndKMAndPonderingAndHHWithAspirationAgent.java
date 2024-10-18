@@ -39,7 +39,7 @@ public class PVSWithQuiescAndKMAndPonderingAndHHWithAspirationAgent implements I
     private static final long TOTAL_GAME_TIME_NANO = 10L * 60L * 1_000_000_000L; // 10 minutes in nanoseconds
     private long totalTimeRemaining;
     private int movesMadeByAgent = 0;
-    private int estimatedTotalMoves = 70; // Estimated number of moves by the agent
+    private final int estimatedTotalMoves = 70; // Estimated number of moves by the agent
 
 
     @Override
@@ -48,6 +48,9 @@ public class PVSWithQuiescAndKMAndPonderingAndHHWithAspirationAgent implements I
         long[] player1Board = fianco.getPlayer1Board();
         long[] player2Board = fianco.getPlayer2Board();
         this.board = new long[]{player1Board[0], player1Board[1], player2Board[0], player2Board[1]};
+        if (alphaBetaSearch != null) {
+            alphaBetaSearch.stopSearchHard();
+        }
         alphaBetaSearch = new PVSWithQuiesAndKMAndHHAndAspiration();
         lastConversionMoves = new ArrayList<>();
         lastConversionMoves.add(0);
@@ -56,7 +59,13 @@ public class PVSWithQuiescAndKMAndPonderingAndHHWithAspirationAgent implements I
         gameMoves = 0;
         boardHistory[gameMoves] = zobristHash;
         totalTimeRemaining = TOTAL_GAME_TIME_NANO;
+        pvLine = new short[PVSWithQuiesAndKM.MAX_NUMBER_OF_ACTUAL_DEPTH];
+        lastIterationDepth = 0;
         movesMadeByAgent = 0;
+        if (searchExecuter != null) {
+            searchExecuter.shutdownNow();
+        }
+        searchExecuter = null;
     }
 
     @Override

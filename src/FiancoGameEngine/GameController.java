@@ -73,7 +73,9 @@ public class GameController {
     }
 
     public void continueGame() {
+        System.out.println("Game continued");
         gameIsRunning = true;
+        calledRestart = true;
     }
 
     public void restartGame() {
