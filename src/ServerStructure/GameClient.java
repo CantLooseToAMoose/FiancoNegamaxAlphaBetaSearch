@@ -1,9 +1,10 @@
 package ServerStructure;
 
 import AI.*;
-import BitBoard.BitmapFianco;
-import FiancoGameEngine.Fianco;
-import FiancoGameEngine.MoveCommand;
+import AI.Agent.*;
+import AI.BitBoard.BitmapFianco;
+import GameEngine.Fianco;
+import GameEngine.MoveCommand;
 
 import java.io.*;
 import java.net.Socket;

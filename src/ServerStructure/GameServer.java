@@ -1,7 +1,7 @@
 package ServerStructure;
 
-import FiancoGameEngine.Fianco;
-import FiancoGameEngine.GameController;
+import GameEngine.Fianco;
+import GameEngine.GameController;
 
 import java.io.*;
 import java.net.InetAddress;

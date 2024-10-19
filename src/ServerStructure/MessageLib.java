@@ -1,6 +1,6 @@
 package ServerStructure;
 
-import FiancoGameEngine.MoveCommand;
+import GameEngine.MoveCommand;
 import com.google.gson.Gson;
 
 public class MessageLib {

@@ -1,6 +1,6 @@
 package AI;
 
-import FiancoGameEngine.MoveCommand;
+import GameEngine.MoveCommand;
 
 public interface IAgent {
 
